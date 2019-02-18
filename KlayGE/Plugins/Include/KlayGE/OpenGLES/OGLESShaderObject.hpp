@@ -83,7 +83,7 @@ namespace KlayGE
 		}
 
 	private:
-		virtual std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const = 0;
+		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const;
 		void CreateHwShader();
 
 		virtual void StageSpecificStreamIn(std::istream& native_shader_stream)
@@ -103,6 +103,7 @@ namespace KlayGE
 		const ShaderObject::ShaderType stage_;
 		const GLenum gl_shader_type_;
 
+		bool is_available_;
 		bool is_validate_;
 
 		std::string shader_func_name_;
@@ -134,8 +135,6 @@ namespace KlayGE
 		}
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
 		void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl) override;
@@ -150,27 +149,18 @@ namespace KlayGE
 	{
 	public:
 		OGLESPixelShaderStageObject();
-
-	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 	};
 
 	class OGLESGeometryShaderStageObject : public OGLESShaderStageObject
 	{
 	public:
 		OGLESGeometryShaderStageObject();
-
-	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 	};
 
 	class OGLESComputeShaderStageObject : public OGLESShaderStageObject
 	{
 	public:
 		OGLESComputeShaderStageObject();
-
-	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 	};
 
 	class OGLESHullShaderStageObject : public OGLESShaderStageObject
@@ -190,8 +180,6 @@ namespace KlayGE
 #endif
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-
 #if KLAYGE_IS_DEV_PLATFORM
 		void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl) override;
 #endif
@@ -213,8 +201,6 @@ namespace KlayGE
 #endif
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-
 #if KLAYGE_IS_DEV_PLATFORM
 	private:
 		uint32_t ds_partitioning_ = 0;

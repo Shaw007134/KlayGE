@@ -295,7 +295,7 @@ namespace KlayGE
 		D3D12_CPU_DESCRIPTOR_HANDLE null_srv_handle_;
 		D3D12_CPU_DESCRIPTOR_HANDLE null_uav_handle_;
 
-		char const * shader_profiles_[ShaderObject::ST_NumShaderTypes];
+		char const* shader_profiles_[ShaderObject::ST_NumShaderTypes];
 
 		enum StereoMethod
 		{

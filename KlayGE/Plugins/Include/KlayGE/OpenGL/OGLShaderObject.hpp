@@ -97,7 +97,7 @@ namespace KlayGE
 		}
 
 	private:
-		virtual std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const = 0;
+		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const;
 		void CreateHwShader();
 
 		virtual void StageSpecificStreamIn(std::istream& native_shader_stream)
@@ -117,6 +117,7 @@ namespace KlayGE
 		const ShaderObject::ShaderType stage_;
 		const GLenum gl_shader_type_;
 
+		bool is_available_;
 		bool is_validate_;
 
 		std::string shader_func_name_;
@@ -148,8 +149,6 @@ namespace KlayGE
 		}
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
 		void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl) override;
@@ -164,9 +163,6 @@ namespace KlayGE
 	{
 	public:
 		OGLPixelShaderStageObject();
-
-	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 	};
 
 	class OGLGeometryShaderStageObject : public OGLShaderStageObject
@@ -175,8 +171,6 @@ namespace KlayGE
 		OGLGeometryShaderStageObject();
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
 		void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl) override;
@@ -191,9 +185,6 @@ namespace KlayGE
 	{
 	public:
 		OGLComputeShaderStageObject();
-
-	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 	};
 
 	class OGLHullShaderStageObject : public OGLShaderStageObject
@@ -211,8 +202,6 @@ namespace KlayGE
 		}
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-
 		void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl) override;
 
 	private:
@@ -226,9 +215,6 @@ namespace KlayGE
 		OGLDomainShaderStageObject();
 
 		void DsParameters(uint32_t partitioning, uint32_t output_primitive);
-
-	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 
 	private:
 		uint32_t ds_partitioning_ = 0;

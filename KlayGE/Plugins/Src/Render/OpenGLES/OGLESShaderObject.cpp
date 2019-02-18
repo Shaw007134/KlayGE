@@ -63,6 +63,16 @@ namespace
 {
 	using namespace KlayGE;
 
+	char const* default_shader_profiles[] =
+	{
+		"vs_5_0",
+		"ps_5_0",
+		"gs_5_0",
+		"cs_5_0",
+		"hs_5_0",
+		"ds_5_0",
+	};
+
 	template <typename SrcType>
 	class SetOGLESShaderParameter
 	{
@@ -597,21 +607,29 @@ namespace KlayGE
 			}
 		}
 	}
-	
-	
-	OGLESVertexShaderStageObject::OGLESVertexShaderStageObject() : OGLESShaderStageObject(ShaderObject::ST_VertexShader, GL_VERTEX_SHADER)
-	{
-	}
 
-	std::string_view OGLESVertexShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
+	std::string_view OGLESShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
 	{
 		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (shader_profile == "auto")
+		if (is_available_)
 		{
-			shader_profile = "vs_5_0";
+			if (shader_profile == "auto")
+			{
+				shader_profile = default_shader_profiles[stage_];
+			}
+		}
+		else
+		{
+			shader_profile = std::string_view();
 		}
 
 		return shader_profile;
+	}
+
+
+	OGLESVertexShaderStageObject::OGLESVertexShaderStageObject() : OGLESShaderStageObject(ShaderObject::ST_VertexShader, GL_VERTEX_SHADER)
+	{
+		is_available_ = true;
 	}
 
 	void OGLESVertexShaderStageObject::StageSpecificStreamIn(std::istream& native_shader_stream)
@@ -753,17 +771,7 @@ namespace KlayGE
 
 	OGLESPixelShaderStageObject::OGLESPixelShaderStageObject() : OGLESShaderStageObject(ShaderObject::ST_PixelShader, GL_FRAGMENT_SHADER)
 	{
-	}
-
-	std::string_view OGLESPixelShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (shader_profile == "auto")
-		{
-			shader_profile = "ps_5_0";
-		}
-
-		return shader_profile;
+		is_available_ = true;
 	}
 
 
@@ -773,76 +781,20 @@ namespace KlayGE
 		is_validate_ = false;
 	}
 
-	std::string_view OGLESGeometryShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.gs_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = "gs_5_0";
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-
-		return shader_profile;
-	}
-
 
 	OGLESComputeShaderStageObject::OGLESComputeShaderStageObject()
 		: OGLESShaderStageObject(ShaderObject::ST_ComputeShader, GL_COMPUTE_SHADER)
 	{
+		is_available_ = false;
 		is_validate_ = false;
-	}
-
-	std::string_view OGLESComputeShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.cs_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = "cs_5_0";
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-
-		return shader_profile;
 	}
 
 
 	OGLESHullShaderStageObject::OGLESHullShaderStageObject() : OGLESShaderStageObject(ShaderObject::ST_HullShader, GL_TESS_CONTROL_SHADER)
 	{
-	}
-
-	std::string_view OGLESHullShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
 		auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
 		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.hs_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = "hs_5_0";
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-
-		return shader_profile;
+		is_available_ = caps.hs_support;
 	}
 
 #if KLAYGE_IS_DEV_PLATFORM
@@ -857,6 +809,9 @@ namespace KlayGE
 	OGLESDomainShaderStageObject::OGLESDomainShaderStageObject()
 		: OGLESShaderStageObject(ShaderObject::ST_DomainShader, GL_TESS_EVALUATION_SHADER)
 	{
+		auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& caps = re.DeviceCaps();
+		is_available_ = caps.ds_support;
 	}
 
 #if KLAYGE_IS_DEV_PLATFORM
@@ -866,26 +821,6 @@ namespace KlayGE
 		ds_output_primitive_ = output_primitive;
 	}
 #endif
-
-	std::string_view OGLESDomainShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.ds_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = "ds_5_0";
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-
-		return shader_profile;
-	}
 
 
 	OGLESShaderObject::OGLESShaderObject()

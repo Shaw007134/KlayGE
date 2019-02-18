@@ -119,17 +119,11 @@ namespace KlayGE
 			return false;
 		}
 
-		virtual void UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
-		{
-			KFL_UNUSED(pso_desc);
-		}
-		virtual void UpdatePsoDesc(D3D12_COMPUTE_PIPELINE_STATE_DESC& pso_desc) const
-		{
-			KFL_UNUSED(pso_desc);
-		}
+		virtual void UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const;
+		virtual void UpdatePsoDesc(D3D12_COMPUTE_PIPELINE_STATE_DESC& pso_desc) const;
 
 	private:
-		virtual std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const = 0;
+		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const;
 		void FillCBufferIndices(RenderEffect const& effect);
 		void CreateHwShader(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids);
 
@@ -145,7 +139,7 @@ namespace KlayGE
 		{
 			KFL_UNUSED(reflection);
 		}
-		virtual void CreateStageSpecificHwShader(
+		virtual void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 		{
 			KFL_UNUSED(effect);
@@ -155,6 +149,7 @@ namespace KlayGE
 	protected:
 		const ShaderObject::ShaderType stage_;
 
+		bool is_available_;
 		bool is_validate_;
 
 		std::vector<uint8_t> shader_code_;
@@ -176,8 +171,7 @@ namespace KlayGE
 		void UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const override;
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-		void CreateStageSpecificHwShader(
+		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
 	private:
@@ -191,9 +185,6 @@ namespace KlayGE
 		D3D12PixelShaderStageObject();
 
 		void UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const override;
-
-	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 	};
 
 	class D3D12GeometryShaderStageObject : public D3D12ShaderStageObject
@@ -209,8 +200,7 @@ namespace KlayGE
 		void UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const override;
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-		void CreateStageSpecificHwShader(
+		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
 	private:
@@ -239,13 +229,11 @@ namespace KlayGE
 		void UpdatePsoDesc(D3D12_COMPUTE_PIPELINE_STATE_DESC& pso_desc) const override;
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-		void CreateStageSpecificHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
-
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
 		void StageSpecificReflection(ID3D12ShaderReflection* reflection) override;
+		void StageSpecificCreateHwShader(
+			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
 	private:
 		uint32_t cs_block_size_x_, cs_block_size_y_, cs_block_size_z_;
@@ -259,8 +247,7 @@ namespace KlayGE
 		void UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const override;
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-		void CreateStageSpecificHwShader(
+		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 	};
 
@@ -277,8 +264,7 @@ namespace KlayGE
 		void UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const override;
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
-		void CreateStageSpecificHwShader(
+		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
 	private:

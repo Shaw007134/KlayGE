@@ -212,6 +212,18 @@ namespace KlayGE
 
 	D3D12ShaderStageObject::~D3D12ShaderStageObject() = default;
 
+	void D3D12ShaderStageObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
+	{
+		KFL_UNUSED(pso_desc);
+		KFL_UNREACHABLE("Couldn't update graphics pipeline state for this shader stage.");
+	}
+
+	void D3D12ShaderStageObject::UpdatePsoDesc(D3D12_COMPUTE_PIPELINE_STATE_DESC& pso_desc) const
+	{
+		KFL_UNUSED(pso_desc);
+		KFL_UNREACHABLE("Couldn't update compute pipeline state for this shader stage.");
+	}
+
 	void D3D12ShaderStageObject::StreamIn(RenderEffect const& effect,
 		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
 	{
@@ -587,7 +599,7 @@ namespace KlayGE
 			else
 			{
 				is_validate_ = true;
-				this->CreateStageSpecificHwShader(effect, shader_desc_ids);
+				this->StageSpecificCreateHwShader(effect, shader_desc_ids);
 			}
 		}
 		else
@@ -617,9 +629,29 @@ namespace KlayGE
 		}
 	}
 
+	std::string_view D3D12ShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
+	{
+		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
+		if (is_available_)
+		{
+			if (shader_profile == "auto")
+			{
+				auto const& re =
+					*checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+				shader_profile = re.DefaultShaderProfile(stage_);
+			}
+		}
+		else
+		{
+			shader_profile = std::string_view();
+		}
+		return shader_profile;
+	}
+
 
 	D3D12VertexShaderStageObject::D3D12VertexShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_VertexShader)
 	{
+		is_available_ = true;
 	}
 
 	void D3D12VertexShaderStageObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
@@ -634,7 +666,7 @@ namespace KlayGE
 		pso_desc.StreamOutput.RasterizedStream = rasterized_stream_;
 	}
 
-	void D3D12VertexShaderStageObject::CreateStageSpecificHwShader(
+	void D3D12VertexShaderStageObject::StageSpecificCreateHwShader(
 		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 	{
 		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
@@ -656,20 +688,10 @@ namespace KlayGE
 		}
 	}
 
-	std::string_view D3D12VertexShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (shader_profile == "auto")
-		{
-			shader_profile = re.DefaultShaderProfile(stage_);
-		}
-		return shader_profile;
-	}
-
 
 	D3D12PixelShaderStageObject::D3D12PixelShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_PixelShader)
 	{
+		is_available_ = true;
 	}
 
 	void D3D12PixelShaderStageObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
@@ -678,20 +700,12 @@ namespace KlayGE
 		pso_desc.PS.BytecodeLength = static_cast<UINT>(shader_code_.size());
 	}
 
-	std::string_view D3D12PixelShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (shader_profile == "auto")
-		{
-			shader_profile = re.DefaultShaderProfile(stage_);
-		}
-		return shader_profile;
-	}
-
 
 	D3D12GeometryShaderStageObject::D3D12GeometryShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_GeometryShader)
 	{
+		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& caps = re.DeviceCaps();
+		is_available_ = caps.gs_support;
 	}
 
 	void D3D12GeometryShaderStageObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
@@ -706,12 +720,10 @@ namespace KlayGE
 		pso_desc.StreamOutput.RasterizedStream = rasterized_stream_;
 	}
 
-	void D3D12GeometryShaderStageObject::CreateStageSpecificHwShader(
+	void D3D12GeometryShaderStageObject::StageSpecificCreateHwShader(
 		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		if (caps.gs_support)
+		if (is_available_)
 		{
 			ShaderDesc const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
 			so_decl_.resize(sd.so_decl.size());
@@ -732,28 +744,12 @@ namespace KlayGE
 		}
 	}
 
-	std::string_view D3D12GeometryShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.gs_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = re.DefaultShaderProfile(stage_);
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-		return shader_profile;
-	}
-
 
 	D3D12ComputeShaderStageObject::D3D12ComputeShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_ComputeShader)
 	{
+		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& caps = re.DeviceCaps();
+		is_available_ = caps.cs_support;
 	}
 
 	void D3D12ComputeShaderStageObject::UpdatePsoDesc(D3D12_COMPUTE_PIPELINE_STATE_DESC& pso_desc) const
@@ -762,37 +758,16 @@ namespace KlayGE
 		pso_desc.CS.BytecodeLength = static_cast<UINT>(shader_code_.size());
 	}
 
-	void D3D12ComputeShaderStageObject::CreateStageSpecificHwShader(
+	void D3D12ComputeShaderStageObject::StageSpecificCreateHwShader(
 		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 	{
 		KFL_UNUSED(effect);
 		KFL_UNUSED(shader_desc_ids);
 
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		if (!caps.cs_support)
+		if (!is_available_)
 		{
 			is_validate_ = false;
 		}
-	}
-
-	std::string_view D3D12ComputeShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.cs_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = re.DefaultShaderProfile(stage_);
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-		return shader_profile;
 	}
 
 	void D3D12ComputeShaderStageObject::StageSpecificStreamIn(std::istream& native_shader_stream)
@@ -827,6 +802,9 @@ namespace KlayGE
 
 	D3D12HullShaderStageObject::D3D12HullShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_HullShader)
 	{
+		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& caps = re.DeviceCaps();
+		is_available_ = caps.hs_support;
 	}
 
 	void D3D12HullShaderStageObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
@@ -835,42 +813,24 @@ namespace KlayGE
 		pso_desc.HS.BytecodeLength = static_cast<UINT>(shader_code_.size());
 	}
 
-	void D3D12HullShaderStageObject::CreateStageSpecificHwShader(
+	void D3D12HullShaderStageObject::StageSpecificCreateHwShader(
 		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 	{
 		KFL_UNUSED(effect);
 		KFL_UNUSED(shader_desc_ids);
 
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		if (!caps.hs_support)
+		if (!is_available_)
 		{
 			is_validate_ = false;
 		}
 	}
 
-	std::string_view D3D12HullShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.hs_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = re.DefaultShaderProfile(stage_);
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-		return shader_profile;
-	}
-
 
 	D3D12DomainShaderStageObject::D3D12DomainShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_DomainShader)
 	{
+		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& caps = re.DeviceCaps();
+		is_available_ = caps.ds_support;
 	}
 
 	void D3D12DomainShaderStageObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
@@ -885,17 +845,17 @@ namespace KlayGE
 		pso_desc.StreamOutput.RasterizedStream = rasterized_stream_;
 	}
 
-	void D3D12DomainShaderStageObject::CreateStageSpecificHwShader(
+	void D3D12DomainShaderStageObject::StageSpecificCreateHwShader(
 		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-
-		if (caps.ds_support)
+		if (is_available_)
 		{
 			auto const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
 			if (!sd.so_decl.empty())
 			{
+				auto const& re =
+					*checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+				auto const& caps = re.DeviceCaps();
 				if (caps.gs_support)
 				{
 					so_decl_.resize(sd.so_decl.size());
@@ -920,25 +880,6 @@ namespace KlayGE
 		{
 			is_validate_ = false;
 		}
-	}
-
-	std::string_view D3D12DomainShaderStageObject::GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const
-	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		auto const& caps = re.DeviceCaps();
-		std::string_view shader_profile = effect.GetShaderDesc(shader_desc_id).profile;
-		if (caps.ds_support)
-		{
-			if (shader_profile == "auto")
-			{
-				shader_profile = re.DefaultShaderProfile(stage_);
-			}
-		}
-		else
-		{
-			shader_profile = std::string_view();
-		}
-		return shader_profile;
 	}
 
 
