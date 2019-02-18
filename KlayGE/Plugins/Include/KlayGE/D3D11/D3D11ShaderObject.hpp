@@ -25,8 +25,6 @@ struct ID3D11ShaderReflection;
 
 namespace KlayGE
 {
-	class D3D11ShaderObject;
-
 	struct D3D11ShaderDesc
 	{
 		struct ConstantBufferDesc

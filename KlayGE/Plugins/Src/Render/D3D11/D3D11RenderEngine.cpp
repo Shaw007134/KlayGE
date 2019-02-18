@@ -99,7 +99,7 @@ namespace KlayGE
 			device_lost_event_(nullptr), device_lost_reg_cookie_(0), thread_pool_wait_(nullptr)
 	{
 		native_shader_fourcc_ = MakeFourCC<'D', 'X', 'B', 'C'>::value;
-		native_shader_version_ = 5;
+		native_shader_version_ = 6;
 
 #ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
 		// Dynamic loading because these dlls can't be loaded on WinXP

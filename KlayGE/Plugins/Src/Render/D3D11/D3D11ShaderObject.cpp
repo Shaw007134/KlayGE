@@ -1098,7 +1098,7 @@ namespace KlayGE
 
 		if (type == ShaderObject::ST_ComputeShader)
 		{
-			auto* cs_shader_stage = checked_cast<D3D11ComputeShaderStageObject*>(shader_stage);
+			auto const* cs_shader_stage = checked_cast<D3D11ComputeShaderStageObject*>(shader_stage);
 			cs_block_size_x_ = cs_shader_stage->CsBlockSizeX();
 			cs_block_size_y_ = cs_shader_stage->CsBlockSizeX();
 			cs_block_size_z_ = cs_shader_stage->CsBlockSizeX();

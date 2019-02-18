@@ -113,29 +113,9 @@ namespace KlayGE
 		bool FullScreen() const;
 		void FullScreen(bool fs);
 
-		char const * VertexShaderProfile() const
+		char const * DefaultShaderProfile(ShaderObject::ShaderType stage) const
 		{
-			return vs_profile_;
-		}
-		char const * PixelShaderProfile() const
-		{
-			return ps_profile_;
-		}
-		char const * GeometryShaderProfile() const
-		{
-			return gs_profile_;
-		}
-		char const * ComputeShaderProfile() const
-		{
-			return cs_profile_;
-		}
-		char const * HullShaderProfile() const
-		{
-			return hs_profile_;
-		}
-		char const * DomainShaderProfile() const
-		{
-			return ds_profile_;
+			return shader_profiles_[stage];
 		}
 
 		void OMSetStencilRef(uint16_t stencil_ref);
@@ -315,12 +295,7 @@ namespace KlayGE
 		D3D12_CPU_DESCRIPTOR_HANDLE null_srv_handle_;
 		D3D12_CPU_DESCRIPTOR_HANDLE null_uav_handle_;
 
-		char const * vs_profile_;
-		char const * ps_profile_;
-		char const * gs_profile_;
-		char const * cs_profile_;
-		char const * hs_profile_;
-		char const * ds_profile_;
+		char const * shader_profiles_[ShaderObject::ST_NumShaderTypes];
 
 		enum StereoMethod
 		{
