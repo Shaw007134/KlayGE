@@ -554,9 +554,8 @@ namespace KlayGE
 	{
 		if (!shader_code_.empty())
 		{
-			RenderFactory& rf = Context::Instance().RenderFactoryInstance();
-			D3D11RenderEngine const& re = *checked_cast<D3D11RenderEngine const*>(&rf.RenderEngineInstance());
-			RenderDeviceCaps const& caps = re.DeviceCaps();
+			auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
+			auto const& caps = re.DeviceCaps();
 
 			ShaderDesc const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
 
@@ -771,7 +770,7 @@ namespace KlayGE
 
 	D3D11GeometryShaderStageObject::D3D11GeometryShaderStageObject() : D3D11ShaderStageObject(ShaderObject::ST_GeometryShader)
 	{
-		auto const& re = *checked_cast<D3D11RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.gs_support;
 	}
@@ -817,7 +816,7 @@ namespace KlayGE
 
 	D3D11ComputeShaderStageObject::D3D11ComputeShaderStageObject() : D3D11ShaderStageObject(ShaderObject::ST_ComputeShader)
 	{
-		auto const& re = *checked_cast<D3D11RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.cs_support;
 	}
@@ -887,7 +886,7 @@ namespace KlayGE
 
 	D3D11HullShaderStageObject::D3D11HullShaderStageObject() : D3D11ShaderStageObject(ShaderObject::ST_HullShader)
 	{
-		auto const& re = *checked_cast<D3D11RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.hs_support;
 	}
@@ -928,7 +927,7 @@ namespace KlayGE
 
 	D3D11DomainShaderStageObject::D3D11DomainShaderStageObject() : D3D11ShaderStageObject(ShaderObject::ST_DomainShader)
 	{
-		auto const& re = *checked_cast<D3D11RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.ds_support;
 	}

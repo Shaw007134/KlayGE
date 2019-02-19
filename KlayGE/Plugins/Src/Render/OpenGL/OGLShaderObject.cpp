@@ -447,7 +447,7 @@ namespace KlayGE
 
 		if (is_validate_)
 		{
-			auto const& re = *checked_cast<OGLRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+			auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 			auto const& caps = re.DeviceCaps();
 
 			std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[stage_]);
@@ -787,7 +787,7 @@ namespace KlayGE
 
 	OGLGeometryShaderStageObject::OGLGeometryShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_GeometryShader, GL_GEOMETRY_SHADER)
 	{
-		auto const& re = *checked_cast<OGLRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.gs_support;
 	}
@@ -875,7 +875,7 @@ namespace KlayGE
 
 	OGLHullShaderStageObject::OGLHullShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_HullShader, GL_TESS_CONTROL_SHADER)
 	{
-		auto const& re = *checked_cast<OGLRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.hs_support;
 	}
@@ -889,7 +889,7 @@ namespace KlayGE
 
 	OGLDomainShaderStageObject::OGLDomainShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_DomainShader, GL_TESS_EVALUATION_SHADER)
 	{
-		auto const& re = *checked_cast<OGLRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.ds_support;
 	}

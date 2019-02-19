@@ -290,6 +290,7 @@ namespace KlayGE
 		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
+	private:
 		ID3D11HullShaderPtr hull_shader_;
 	};
 
@@ -312,6 +313,7 @@ namespace KlayGE
 		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
+	private:
 		ID3D11DomainShaderPtr domain_shader_;
 		ID3D11GeometryShaderPtr geometry_shader_;
 	};

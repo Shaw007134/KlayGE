@@ -585,8 +585,7 @@ namespace KlayGE
 	{
 		if (!shader_code_.empty())
 		{
-			auto& rf = Context::Instance().RenderFactoryInstance();
-			auto const& re = *checked_cast<D3D12RenderEngine const*>(&rf.RenderEngineInstance());
+			auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 			auto const& caps = re.DeviceCaps();
 			auto const & sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
 
@@ -669,7 +668,7 @@ namespace KlayGE
 	void D3D12VertexShaderStageObject::StageSpecificCreateHwShader(
 		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		auto const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
 		if (caps.gs_support && !sd.so_decl.empty())
@@ -703,7 +702,7 @@ namespace KlayGE
 
 	D3D12GeometryShaderStageObject::D3D12GeometryShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_GeometryShader)
 	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.gs_support;
 	}
@@ -747,7 +746,7 @@ namespace KlayGE
 
 	D3D12ComputeShaderStageObject::D3D12ComputeShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_ComputeShader)
 	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.cs_support;
 	}
@@ -802,7 +801,7 @@ namespace KlayGE
 
 	D3D12HullShaderStageObject::D3D12HullShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_HullShader)
 	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.hs_support;
 	}
@@ -828,7 +827,7 @@ namespace KlayGE
 
 	D3D12DomainShaderStageObject::D3D12DomainShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_DomainShader)
 	{
-		auto const& re = *checked_cast<D3D12RenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.ds_support;
 	}

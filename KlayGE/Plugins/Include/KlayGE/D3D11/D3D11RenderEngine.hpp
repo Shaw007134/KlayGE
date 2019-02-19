@@ -222,7 +222,7 @@ namespace KlayGE
 		std::vector<ID3D11RenderTargetView*> rtv_ptr_cache_;
 		ID3D11DepthStencilView* dsv_ptr_cache_;
 
-		char const * shader_profiles_[ShaderObject::ST_NumShaderTypes];
+		char const* shader_profiles_[ShaderObject::ST_NumShaderTypes];
 
 		enum StereoMethod
 		{

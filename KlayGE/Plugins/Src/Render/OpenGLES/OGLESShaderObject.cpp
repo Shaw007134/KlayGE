@@ -433,7 +433,7 @@ namespace KlayGE
 		if (is_validate_)
 		{
 #if KLAYGE_IS_DEV_PLATFORM
-			auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+			auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 			auto const& caps = re.DeviceCaps();
 
 			std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[stage_]);
@@ -778,6 +778,7 @@ namespace KlayGE
 	OGLESGeometryShaderStageObject::OGLESGeometryShaderStageObject()
 		: OGLESShaderStageObject(ShaderObject::ST_GeometryShader, GL_GEOMETRY_SHADER)
 	{
+		is_available_ = false;
 		is_validate_ = false;
 	}
 
@@ -792,7 +793,7 @@ namespace KlayGE
 
 	OGLESHullShaderStageObject::OGLESHullShaderStageObject() : OGLESShaderStageObject(ShaderObject::ST_HullShader, GL_TESS_CONTROL_SHADER)
 	{
-		auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.hs_support;
 	}
@@ -809,7 +810,7 @@ namespace KlayGE
 	OGLESDomainShaderStageObject::OGLESDomainShaderStageObject()
 		: OGLESShaderStageObject(ShaderObject::ST_DomainShader, GL_TESS_EVALUATION_SHADER)
 	{
-		auto const& re = *checked_cast<OGLESRenderEngine const*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
+		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
 		is_available_ = caps.ds_support;
 	}

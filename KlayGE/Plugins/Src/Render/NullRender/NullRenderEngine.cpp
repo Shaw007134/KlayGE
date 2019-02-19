@@ -101,21 +101,21 @@ namespace KlayGE
 
 			if (native_shader_platform_name_.find("d3d_11") == 0)
 			{
-				vs_profile_ = "vs_5_0";
-				ps_profile_ = "ps_5_0";
-				gs_profile_ = "gs_5_0";
-				cs_profile_ = "cs_5_0";
-				hs_profile_ = "hs_5_0";
-				ds_profile_ = "ds_5_0";
+				shader_profiles_[ShaderObject::ST_VertexShader] = "vs_5_0";
+				shader_profiles_[ShaderObject::ST_PixelShader] = "ps_5_0";
+				shader_profiles_[ShaderObject::ST_GeometryShader] = "gs_5_0";
+				shader_profiles_[ShaderObject::ST_ComputeShader] = "cs_5_0";
+				shader_profiles_[ShaderObject::ST_HullShader] = "hs_5_0";
+				shader_profiles_[ShaderObject::ST_DomainShader] = "ds_5_0";
 			}
 			else if (native_shader_platform_name_.find("d3d_12") == 0)
 			{
-				vs_profile_ = "vs_5_1";
-				ps_profile_ = "ps_5_1";
-				gs_profile_ = "gs_5_1";
-				cs_profile_ = "cs_5_1";
-				hs_profile_ = "hs_5_1";
-				ds_profile_ = "ds_5_1";
+				shader_profiles_[ShaderObject::ST_VertexShader] = "vs_5_1";
+				shader_profiles_[ShaderObject::ST_PixelShader] = "ps_5_1";
+				shader_profiles_[ShaderObject::ST_GeometryShader] = "gs_5_1";
+				shader_profiles_[ShaderObject::ST_ComputeShader] = "cs_5_1";
+				shader_profiles_[ShaderObject::ST_HullShader] = "hs_5_1";
+				shader_profiles_[ShaderObject::ST_DomainShader] = "ds_5_1";
 			}
 			else
 			{
