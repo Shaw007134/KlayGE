@@ -131,10 +131,12 @@ namespace KlayGE
 		{
 			KFL_UNUSED(os);
 		}
+#ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
 		virtual void StageSpecificReflection(ID3D11ShaderReflection* reflection)
 		{
 			KFL_UNUSED(reflection);
 		}
+#endif
 
 	protected:
 		const ShaderObject::ShaderType stage_;
@@ -162,7 +164,9 @@ namespace KlayGE
 	private:
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
+#ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
 		void StageSpecificReflection(ID3D11ShaderReflection* reflection) override;
+#endif
 
 	private:
 		uint32_t vs_signature_;
@@ -207,7 +211,9 @@ namespace KlayGE
 	private:
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
+#ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
 		void StageSpecificReflection(ID3D11ShaderReflection* reflection) override;
+#endif
 
 	private:
 		uint32_t cs_block_size_x_, cs_block_size_y_, cs_block_size_z_;

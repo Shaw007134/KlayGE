@@ -94,10 +94,12 @@ namespace KlayGE
 		{
 			KFL_UNUSED(os);
 		}
+#if KLAYGE_IS_DEV_PLATFORM
 		virtual void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl)
 		{
 			KFL_UNUSED(dxbc2glsl);
 		}
+#endif
 
 	protected:
 		const ShaderObject::ShaderType stage_;
@@ -137,7 +139,9 @@ namespace KlayGE
 	private:
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
+#if KLAYGE_IS_DEV_PLATFORM
 		void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl) override;
+#endif
 
 	private:
 		std::vector<VertexElementUsage> usages_;

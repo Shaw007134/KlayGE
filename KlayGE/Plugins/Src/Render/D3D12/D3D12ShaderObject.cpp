@@ -47,7 +47,7 @@
 #include <cstring>
 #include <boost/assert.hpp>
 
-#ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
+#if KLAYGE_IS_DEV_PLATFORM
 #include <KlayGE/SALWrapper.hpp>
 #include <d3dcompiler.h>
 #endif
@@ -570,7 +570,6 @@ namespace KlayGE
 			shader_profile_.clear();
 		}
 #else
-		KFL_UNUSED(type);
 		KFL_UNUSED(effect);
 		KFL_UNUSED(tech);
 		KFL_UNUSED(pass);
@@ -793,10 +792,12 @@ namespace KlayGE
 		os.write(reinterpret_cast<char const*>(&cs_block_size_z), sizeof(cs_block_size_z));
 	}
 
+#if KLAYGE_IS_DEV_PLATFORM
 	void D3D12ComputeShaderStageObject::StageSpecificReflection(ID3D12ShaderReflection* reflection)
 	{
 		reflection->GetThreadGroupSize(&cs_block_size_x_, &cs_block_size_y_, &cs_block_size_z_);
 	}
+#endif
 
 
 	D3D12HullShaderStageObject::D3D12HullShaderStageObject() : D3D12ShaderStageObject(ShaderObject::ST_HullShader)

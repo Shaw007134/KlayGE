@@ -33,7 +33,7 @@
 #include <cstring>
 #include <boost/assert.hpp>
 
-#ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
+#if KLAYGE_IS_DEV_PLATFORM
 #include <KlayGE/SALWrapper.hpp>
 #include <d3dcompiler.h>
 #endif
@@ -539,7 +539,6 @@ namespace KlayGE
 			shader_profile_.clear();
 		}
 #else
-		KFL_UNUSED(type);
 		KFL_UNUSED(effect);
 		KFL_UNUSED(tech);
 		KFL_UNUSED(pass);
@@ -708,6 +707,7 @@ namespace KlayGE
 		os.write(reinterpret_cast<char const*>(&vs_signature), sizeof(vs_signature));
 	}
 
+#if KLAYGE_IS_DEV_PLATFORM
 	void D3D11VertexShaderStageObject::StageSpecificReflection(ID3D11ShaderReflection* reflection)
 	{
 		D3D11_SHADER_DESC desc;
@@ -734,6 +734,7 @@ namespace KlayGE
 			vs_signature_ = static_cast<uint32_t>(sig);
 		}
 	}
+#endif
 
 
 	D3D11PixelShaderStageObject::D3D11PixelShaderStageObject() : D3D11ShaderStageObject(ShaderObject::ST_PixelShader)
@@ -878,10 +879,12 @@ namespace KlayGE
 		os.write(reinterpret_cast<char const*>(&cs_block_size_z), sizeof(cs_block_size_z));
 	}
 
+#if KLAYGE_IS_DEV_PLATFORM
 	void D3D11ComputeShaderStageObject::StageSpecificReflection(ID3D11ShaderReflection* reflection)
 	{
 		reflection->GetThreadGroupSize(&cs_block_size_x_, &cs_block_size_y_, &cs_block_size_z_);
 	}
+#endif
 
 
 	D3D11HullShaderStageObject::D3D11HullShaderStageObject() : D3D11ShaderStageObject(ShaderObject::ST_HullShader)

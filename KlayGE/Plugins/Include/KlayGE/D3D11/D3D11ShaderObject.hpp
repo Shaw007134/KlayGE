@@ -21,7 +21,9 @@
 
 #include <KlayGE/D3D11/D3D11Typedefs.hpp>
 
+#if KLAYGE_IS_DEV_PLATFORM
 struct ID3D11ShaderReflection;
+#endif
 
 namespace KlayGE
 {
@@ -141,10 +143,12 @@ namespace KlayGE
 		{
 			KFL_UNUSED(os);
 		}
+#if KLAYGE_IS_DEV_PLATFORM
 		virtual void StageSpecificReflection(ID3D11ShaderReflection* reflection)
 		{
 			KFL_UNUSED(reflection);
 		}
+#endif
 		virtual void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 		{
@@ -188,7 +192,9 @@ namespace KlayGE
 
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
+#if KLAYGE_IS_DEV_PLATFORM
 		void StageSpecificReflection(ID3D11ShaderReflection* reflection) override;
+#endif
 		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
@@ -267,7 +273,9 @@ namespace KlayGE
 
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
+#if KLAYGE_IS_DEV_PLATFORM
 		void StageSpecificReflection(ID3D11ShaderReflection* reflection) override;
+#endif
 
 	private:
 		ID3D11ComputeShaderPtr compute_shader_;

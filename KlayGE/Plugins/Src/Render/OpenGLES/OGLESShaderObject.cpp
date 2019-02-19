@@ -178,25 +178,6 @@ namespace
 		RenderEffectParameter* sampler_param_;
 	};
 
-	void PrintGLSLErrorAtLine(std::string const& glsl, int err_line)
-	{
-		MemInputStreamBuf glsl_buff(glsl.data(), glsl.size());
-		std::istream iss(&glsl_buff);
-		std::string s;
-		int line = 1;
-		LogError() << "..." << std::endl;
-		while (iss)
-		{
-			std::getline(iss, s);
-			if ((line - err_line > -3) && (line - err_line < 3))
-			{
-				LogError() << line << ' ' << s << std::endl;
-			}
-			++line;
-		}
-		LogError() << "..." << std::endl;
-	}
-
 	void PrintGLSLError(std::string const& glsl, std::string_view info)
 	{
 		OGLESRenderEngine& re = *checked_cast<OGLESRenderEngine*>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
@@ -691,6 +672,7 @@ namespace KlayGE
 		}
 	}
 
+#if KLAYGE_IS_DEV_PLATFORM
 	void OGLESVertexShaderStageObject::StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl)
 	{
 		for (uint32_t i = 0; i < dxbc2glsl.NumInputParams(); ++i)
@@ -767,6 +749,7 @@ namespace KlayGE
 			}
 		}
 	}
+#endif
 
 
 	OGLESPixelShaderStageObject::OGLESPixelShaderStageObject() : OGLESShaderStageObject(ShaderObject::ST_PixelShader, GL_FRAGMENT_SHADER)

@@ -436,7 +436,6 @@ namespace KlayGE
 			shader_profile_.clear();
 		}
 #else
-		KFL_UNUSED(type);
 		KFL_UNUSED(effect);
 		KFL_UNUSED(tech);
 		KFL_UNUSED(pass);
@@ -502,6 +501,7 @@ namespace KlayGE
 		os.write(reinterpret_cast<char const*>(&vs_signature), sizeof(vs_signature));
 	}
 
+#ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
 	void D3D11VertexShaderStageObject::StageSpecificReflection(ID3D11ShaderReflection* reflection)
 	{
 		D3D11_SHADER_DESC desc;
@@ -528,6 +528,7 @@ namespace KlayGE
 			vs_signature_ = static_cast<uint32_t>(sig);
 		}
 	}
+#endif
 
 
 	D3D12VertexShaderStageObject::D3D12VertexShaderStageObject() : D3DShaderStageObject(ShaderObject::ST_VertexShader, true)
@@ -582,10 +583,12 @@ namespace KlayGE
 		os.write(reinterpret_cast<char const*>(&cs_block_size_z), sizeof(cs_block_size_z));
 	}
 
+#ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
 	void D3DComputeShaderStageObject::StageSpecificReflection(ID3D11ShaderReflection* reflection)
 	{
 		reflection->GetThreadGroupSize(&cs_block_size_x_, &cs_block_size_y_, &cs_block_size_z_);
 	}
+#endif
 
 
 	D3DHullShaderStageObject::D3DHullShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderObject::ST_HullShader, as_d3d12)

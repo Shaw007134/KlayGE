@@ -38,7 +38,9 @@
 
 #include <KlayGE/D3D12/D3D12Typedefs.hpp>
 
+#if KLAYGE_IS_DEV_PLATFORM
 struct ID3D12ShaderReflection;
+#endif
 
 namespace KlayGE
 {
@@ -135,10 +137,12 @@ namespace KlayGE
 		{
 			KFL_UNUSED(os);
 		}
+#if KLAYGE_IS_DEV_PLATFORM
 		virtual void StageSpecificReflection(ID3D12ShaderReflection* reflection)
 		{
 			KFL_UNUSED(reflection);
 		}
+#endif
 		virtual void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 		{
@@ -231,7 +235,9 @@ namespace KlayGE
 	private:
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
+#if KLAYGE_IS_DEV_PLATFORM
 		void StageSpecificReflection(ID3D12ShaderReflection* reflection) override;
+#endif
 		void StageSpecificCreateHwShader(
 			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
