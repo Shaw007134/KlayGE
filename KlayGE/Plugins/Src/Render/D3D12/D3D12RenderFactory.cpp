@@ -29,6 +29,7 @@
  */
 
 #include <KlayGE/KlayGE.hpp>
+#include <KFL/ErrorHandling.hpp>
 #include <KFL/Util.hpp>
 #include <KFL/Math.hpp>
 
@@ -273,6 +274,41 @@ namespace KlayGE
 	ShaderObjectPtr D3D12RenderFactory::MakeShaderObject()
 	{
 		return MakeSharedPtr<D3D12ShaderObject>();
+	}
+
+	ShaderStageObjectPtr D3D12RenderFactory::MakeShaderStageObject(ShaderObject::ShaderType stage)
+	{
+		ShaderStageObjectPtr ret;
+		switch (stage)
+		{
+		case ShaderObject::ST_VertexShader:
+			ret = MakeSharedPtr<D3D12VertexShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_PixelShader:
+			ret = MakeSharedPtr<D3D12PixelShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_GeometryShader:
+			ret = MakeSharedPtr<D3D12GeometryShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_ComputeShader:
+			ret = MakeSharedPtr<D3D12ComputeShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_HullShader:
+			ret = MakeSharedPtr<D3D12HullShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_DomainShader:
+			ret = MakeSharedPtr<D3D12DomainShaderStageObject>();
+			break;
+
+		default:
+			KFL_UNREACHABLE("Invalid shader stage");
+		}
+		return ret;
 	}
 
 	std::unique_ptr<RenderEngine> D3D12RenderFactory::DoMakeRenderEngine()

@@ -4074,7 +4074,7 @@ namespace KlayGE
 				}
 
 				has_discard_ |= pass->GetShaderObject(effect)->HasDiscard();
-				has_tessellation_ |= pass->GetShaderObject(effect)->HasTessellation();
+				has_tessellation_ |= !!pass->GetShaderObject(effect)->ShaderStage(ShaderObject::ST_HullShader);
 			}
 			if (transparent_)
 			{
@@ -4141,7 +4141,7 @@ namespace KlayGE
 			is_validate_ &= pass->Validate();
 
 			has_discard_ |= pass->GetShaderObject(effect)->HasDiscard();
-			has_tessellation_ |= pass->GetShaderObject(effect)->HasTessellation();
+			has_tessellation_ |= !!pass->GetShaderObject(effect)->ShaderStage(ShaderObject::ST_HullShader);
 		}
 
 		return ret;

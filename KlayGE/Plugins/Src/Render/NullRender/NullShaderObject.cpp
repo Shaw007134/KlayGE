@@ -79,11 +79,10 @@ namespace
 
 namespace KlayGE
 {
-	D3DShaderStageObject::D3DShaderStageObject(ShaderObject::ShaderType stage, bool as_d3d12) : stage_(stage), as_d3d12_(as_d3d12)
+	D3DShaderStageObject::D3DShaderStageObject(ShaderObject::ShaderType stage, bool as_d3d12)
+		: ShaderStageObject(stage), as_d3d12_(as_d3d12)
 	{
 	}
-
-	D3DShaderStageObject::~D3DShaderStageObject() = default;
 
 	void D3DShaderStageObject::StreamIn(RenderEffect const& effect,
 		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
@@ -561,32 +560,32 @@ namespace KlayGE
 
 	void D3DComputeShaderStageObject::StageSpecificStreamIn(std::istream& native_shader_stream)
 	{
-		native_shader_stream.read(reinterpret_cast<char*>(&cs_block_size_x_), sizeof(cs_block_size_x_));
-		cs_block_size_x_ = LE2Native(cs_block_size_x_);
+		native_shader_stream.read(reinterpret_cast<char*>(&block_size_x_), sizeof(block_size_x_));
+		block_size_x_ = LE2Native(block_size_x_);
 
-		native_shader_stream.read(reinterpret_cast<char*>(&cs_block_size_y_), sizeof(cs_block_size_y_));
-		cs_block_size_y_ = LE2Native(cs_block_size_y_);
+		native_shader_stream.read(reinterpret_cast<char*>(&block_size_y_), sizeof(block_size_y_));
+		block_size_y_ = LE2Native(block_size_y_);
 
-		native_shader_stream.read(reinterpret_cast<char*>(&cs_block_size_z_), sizeof(cs_block_size_z_));
-		cs_block_size_z_ = LE2Native(cs_block_size_z_);
+		native_shader_stream.read(reinterpret_cast<char*>(&block_size_z_), sizeof(block_size_z_));
+		block_size_z_ = LE2Native(block_size_z_);
 	}
 
 	void D3DComputeShaderStageObject::StageSpecificStreamOut(std::ostream& os)
 	{
-		uint32_t cs_block_size_x = Native2LE(cs_block_size_x_);
-		os.write(reinterpret_cast<char const*>(&cs_block_size_x), sizeof(cs_block_size_x));
+		uint32_t block_size_x = Native2LE(block_size_x_);
+		os.write(reinterpret_cast<char const*>(&block_size_x), sizeof(block_size_x));
 
-		uint32_t cs_block_size_y = Native2LE(cs_block_size_y_);
-		os.write(reinterpret_cast<char const*>(&cs_block_size_y), sizeof(cs_block_size_y));
+		uint32_t block_size_y = Native2LE(block_size_y_);
+		os.write(reinterpret_cast<char const*>(&block_size_y), sizeof(block_size_y));
 
-		uint32_t cs_block_size_z = Native2LE(cs_block_size_z_);
-		os.write(reinterpret_cast<char const*>(&cs_block_size_z), sizeof(cs_block_size_z));
+		uint32_t block_size_z = Native2LE(block_size_z_);
+		os.write(reinterpret_cast<char const*>(&block_size_z), sizeof(block_size_z));
 	}
 
 #ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
 	void D3DComputeShaderStageObject::StageSpecificReflection(ID3D11ShaderReflection* reflection)
 	{
-		reflection->GetThreadGroupSize(&cs_block_size_x_, &cs_block_size_y_, &cs_block_size_z_);
+		reflection->GetThreadGroupSize(&block_size_x_, &block_size_y_, &block_size_z_);
 	}
 #endif
 
@@ -608,11 +607,9 @@ namespace KlayGE
 
 
 	OGLShaderStageObject::OGLShaderStageObject(ShaderObject::ShaderType stage, GLenum gl_shader_type, bool as_gles)
-		: stage_(stage), gl_shader_type_(gl_shader_type), as_gles_(as_gles)
+		: ShaderStageObject(stage), gl_shader_type_(gl_shader_type), as_gles_(as_gles)
 	{
 	}
-
-	OGLShaderStageObject::~OGLShaderStageObject() = default;
 
 	void OGLShaderStageObject::StreamIn(RenderEffect const& effect,
 		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
@@ -1291,46 +1288,36 @@ namespace KlayGE
 	}
 
 
-	NullShaderObject::NullShaderObjectTemplate::~NullShaderObjectTemplate() = default;
-
-
 	NullShaderObject::NullShaderObject()
+		: NullShaderObject(MakeSharedPtr<ShaderObjectTemplate>(), MakeSharedPtr<NullShaderObjectTemplate>())
 	{
 		auto const & re = *checked_cast<NullRenderEngine const *>(&Context::Instance().RenderFactoryInstance().RenderEngineInstance());
-		if (re.NativeShaderPlatformName().find("d3d_11_") == 0)
+		std::string_view const platform_name = re.NativeShaderPlatformName();
+		if (platform_name.find("d3d_11_") == 0)
 		{
-			so_template_ = MakeSharedPtr<D3DShaderObjectTemplate>();
-			so_template_->as_d3d11_ = true;
+			null_so_template_->as_d3d11_ = true;
 		}
-		else if (re.NativeShaderPlatformName().find("d3d_12_") == 0)
+		else if (platform_name.find("d3d_12_") == 0)
 		{
-			so_template_ = MakeSharedPtr<D3DShaderObjectTemplate>();
-			so_template_->as_d3d12_ = true;
+			null_so_template_->as_d3d12_ = true;
 		}
 #ifndef KLAYGE_PLATFORM_WINDOWS_STORE
-		else if (re.NativeShaderPlatformName().find("gl_") == 0)
+		else if (platform_name.find("gl_") == 0)
 		{
-			so_template_ = MakeSharedPtr<OGLShaderObjectTemplate>();
-			so_template_->as_gl_ = true;
+			null_so_template_->as_gl_ = true;
 		}
-		else if (re.NativeShaderPlatformName().find("gles_") == 0)
+		else if (platform_name.find("gles_") == 0)
 		{
-			so_template_ = MakeSharedPtr<OGLShaderObjectTemplate>();
-			so_template_->as_gles_ = true;
+			null_so_template_->as_gles_ = true;
 		}
 #endif
-
-		has_discard_ = true;
-		has_tessellation_ = false;
-		is_shader_validate_.fill(false);
 	}
 	
-	NullShaderObject::NullShaderObject(std::shared_ptr<NullShaderObjectTemplate> const & so_template)
-		: so_template_(so_template)
+	NullShaderObject::NullShaderObject(
+		std::shared_ptr<ShaderObjectTemplate> const& so_template, std::shared_ptr<NullShaderObjectTemplate> const& null_so_template)
+		: ShaderObject(so_template), null_so_template_(null_so_template)
 	{
 		has_discard_ = true;
-		has_tessellation_ = false;
-		is_shader_validate_.fill(false);
 	}
 
 	bool NullShaderObject::AttachNativeShader(ShaderType type, RenderEffect const & effect,
@@ -1343,44 +1330,14 @@ namespace KlayGE
 		return true;
 	}
 
-	bool NullShaderObject::StreamIn(ResIdentifierPtr const & res, ShaderType type, RenderEffect const & effect,
-		std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
-	{
-		KFL_UNUSED(type);
-		KFL_UNUSED(effect);
-		KFL_UNUSED(shader_desc_ids);
-
-		uint32_t len;
-		res->read(&len, sizeof(len));
-		len = LE2Native(len);
-		if (len > 0)
-		{
-			res->seekg(len, std::ios_base::cur);
-		}
-
-		return true;
-	}
-
-	void NullShaderObject::StreamOut(std::ostream& os, ShaderType type)
-	{
-		if (so_template_->as_d3d11_ || so_template_->as_d3d12_)
-		{
-			this->D3D11StreamOut(os, type);
-		}
-		else if (so_template_->as_gl_ || so_template_->as_gles_)
-		{
-			this->OGLStreamOut(os, type);
-		}
-	}
-
 	void NullShaderObject::AttachShader(ShaderType type, RenderEffect const & effect,
 		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
 	{
-		if (so_template_->as_d3d11_ || so_template_->as_d3d12_)
+		if (null_so_template_->as_d3d11_ || null_so_template_->as_d3d12_)
 		{
 			this->D3D11AttachShader(type, effect, tech, pass, shader_desc_ids);
 		}
-		else if (so_template_->as_gl_ || so_template_->as_gles_)
+		else if (null_so_template_->as_gl_ || null_so_template_->as_gles_)
 		{
 			this->OGLAttachShader(type, effect, tech, pass, shader_desc_ids);
 		}
@@ -1389,11 +1346,11 @@ namespace KlayGE
 	void NullShaderObject::AttachShader(ShaderType type, RenderEffect const & effect,
 		RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so)
 	{
-		if (so_template_->as_d3d11_ || so_template_->as_d3d12_)
+		if (null_so_template_->as_d3d11_ || null_so_template_->as_d3d12_)
 		{
 			this->D3D11AttachShader(type, effect, tech, pass, shared_so);
 		}
-		else if (so_template_->as_gl_ || so_template_->as_gles_)
+		else if (null_so_template_->as_gl_ || null_so_template_->as_gles_)
 		{
 			this->OGLAttachShader(type, effect, tech, pass, shared_so);
 		}
@@ -1401,11 +1358,11 @@ namespace KlayGE
 
 	void NullShaderObject::LinkShaders(RenderEffect const & effect)
 	{
-		if (so_template_->as_d3d11_ || so_template_->as_d3d12_)
+		if (null_so_template_->as_d3d11_ || null_so_template_->as_d3d12_)
 		{
 			this->D3D11LinkShaders(effect);
 		}
-		else if (so_template_->as_gl_ || so_template_->as_gles_)
+		else if (null_so_template_->as_gl_ || null_so_template_->as_gles_)
 		{
 			this->OGLLinkShaders(effect);
 		}
@@ -1425,108 +1382,7 @@ namespace KlayGE
 	{
 	}
 
-	void NullShaderObject::CreateShaderStage(ShaderType stage)
-	{
-		if (so_template_->as_d3d11_ || so_template_->as_d3d12_)
-		{
-			std::shared_ptr<D3DShaderStageObject> shader_stage;
-			switch (stage)
-			{
-			case ShaderObject::ST_VertexShader:
-				if (so_template_->as_d3d11_)
-				{
-					shader_stage = MakeSharedPtr<D3D11VertexShaderStageObject>();
-				}
-				else
-				{
-					BOOST_ASSERT(so_template_->as_d3d12_);
-					shader_stage = MakeSharedPtr<D3D12VertexShaderStageObject>();
-				}
-				break;
-
-			case ShaderObject::ST_PixelShader:
-				shader_stage = MakeSharedPtr<D3DPixelShaderStageObject>(so_template_->as_d3d12_);
-				break;
-
-			case ShaderObject::ST_GeometryShader:
-				shader_stage = MakeSharedPtr<D3DGeometryShaderStageObject>(so_template_->as_d3d12_);
-				break;
-
-			case ShaderObject::ST_ComputeShader:
-				shader_stage = MakeSharedPtr<D3DComputeShaderStageObject>(so_template_->as_d3d12_);
-				break;
-
-			case ShaderObject::ST_HullShader:
-				shader_stage = MakeSharedPtr<D3DHullShaderStageObject>(so_template_->as_d3d12_);
-				break;
-
-			case ShaderObject::ST_DomainShader:
-				shader_stage = MakeSharedPtr<D3DDomainShaderStageObject>(so_template_->as_d3d12_);
-				break;
-
-			default:
-				KFL_UNREACHABLE("Invalid shader stage");
-			}
-
-			auto* d3d_so_template = checked_cast<D3DShaderObjectTemplate*>(so_template_.get());
-			d3d_so_template->shader_stages_[stage] = shader_stage;
-		}
-		else
-		{
-			std::shared_ptr<OGLShaderStageObject> shader_stage;
-			switch (stage)
-			{
-			case ShaderObject::ST_VertexShader:
-				shader_stage = MakeSharedPtr<OGLVertexShaderStageObject>(so_template_->as_gles_);
-				break;
-
-			case ShaderObject::ST_PixelShader:
-				shader_stage = MakeSharedPtr<OGLPixelShaderStageObject>(so_template_->as_gles_);
-				break;
-
-			case ShaderObject::ST_GeometryShader:
-				if (so_template_->as_gl_)
-				{
-					shader_stage = MakeSharedPtr<OGLGeometryShaderStageObject>();
-				}
-				else
-				{
-					BOOST_ASSERT(so_template_->as_gles_);
-					shader_stage = MakeSharedPtr<OGLESGeometryShaderStageObject>();
-				}
-				break;
-
-			case ShaderObject::ST_ComputeShader:
-				shader_stage = MakeSharedPtr<OGLComputeShaderStageObject>(so_template_->as_gles_);
-				break;
-
-			case ShaderObject::ST_HullShader:
-				shader_stage = MakeSharedPtr<OGLHullShaderStageObject>(so_template_->as_gles_);
-				break;
-
-			case ShaderObject::ST_DomainShader:
-				shader_stage = MakeSharedPtr<OGLDomainShaderStageObject>(so_template_->as_gles_);
-				break;
-
-			default:
-				KFL_UNREACHABLE("Invalid shader stage");
-			}
-
-			auto* gl_so_template = checked_cast<OGLShaderObjectTemplate*>(so_template_.get());
-			gl_so_template->shader_stages_[stage] = shader_stage;
-		}
-	}
-	
 	// D3D11/D3D12
-
-	void NullShaderObject::D3D11StreamOut(std::ostream& os, ShaderType type)
-	{
-		// D3D11ShaderObject::StreamOut
-		// D3D12ShaderObject::StreamOut
-
-		auto* d3d_so_template = checked_cast<D3DShaderObjectTemplate*>(so_template_.get());
-		d3d_so_template->shader_stages_[type]->StreamOut(os);
-	}
 
 	void NullShaderObject::D3D11AttachShader(ShaderType type, RenderEffect const & effect,
 		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
@@ -1534,10 +1390,10 @@ namespace KlayGE
 		// D3D11ShaderObject::AttachShader
 		// D3D12ShaderObject::AttachShader
 
-		this->CreateShaderStage(type);
+		auto& rf = Context::Instance().RenderFactoryInstance();
+		auto shader_stage = rf.MakeShaderStageObject(type);
 
-		auto* d3d_so_template = checked_cast<D3DShaderObjectTemplate*>(so_template_.get());
-		auto* shader_stage = d3d_so_template->shader_stages_[type].get();
+		so_template_->shader_stages_[type] = shader_stage;
 		shader_stage->AttachShader(effect, tech, pass, shader_desc_ids);
 	}
 
@@ -1553,36 +1409,8 @@ namespace KlayGE
 
 		if (shared_so)
 		{
-			auto* d3d_so_template = checked_cast<D3DShaderObjectTemplate*>(so_template_.get());
-
 			NullShaderObject const & so = *checked_cast<NullShaderObject*>(shared_so.get());
-			auto* d3d_so_so_template = checked_cast<D3DShaderObjectTemplate*>(so.so_template_.get());
-
-			is_shader_validate_[type] = so.is_shader_validate_[type];
-			if (is_shader_validate_[type])
-			{
-				d3d_so_template->shader_stages_[type] = d3d_so_so_template->shader_stages_[type];
-				switch (type)
-				{
-				case ST_VertexShader:
-				case ST_PixelShader:
-				case ST_GeometryShader:
-					break;
-
-				case ST_ComputeShader:
-					cs_block_size_x_ = so.cs_block_size_x_;
-					cs_block_size_y_ = so.cs_block_size_y_;
-					cs_block_size_z_ = so.cs_block_size_z_;
-					break;
-
-				case ST_HullShader:
-				case ST_DomainShader:
-					break;
-
-				default:
-					KFL_UNREACHABLE("Invalid shader stage");
-				}
-			}
+			so_template_->shader_stages_[type] = so.so_template_->shader_stages_[type];
 		}
 	}
 
@@ -1596,25 +1424,14 @@ namespace KlayGE
 		is_validate_ = true;
 		for (size_t type = 0; type < ST_NumShaderTypes; ++type)
 		{
-			is_validate_ &= is_shader_validate_[type];
+			if (so_template_->shader_stages_[type])
+			{
+				is_validate_ &= so_template_->shader_stages_[type]->Validate();
+			}
 		}
 	}
 
 	// OpenGL/OpenGLES
-
-	void NullShaderObject::OGLStreamOut(std::ostream& os, ShaderType type)
-	{
-		// OGLShaderObject::StreamOut
-		// OGLESShaderObject::StreamOut
-
-#ifndef KLAYGE_PLATFORM_WINDOWS_STORE
-		auto ogl_so_template = checked_cast<OGLShaderObjectTemplate*>(so_template_.get());
-		ogl_so_template->shader_stages_[type]->StreamOut(os);
-#else
-		KFL_UNUSED(os);
-		KFL_UNUSED(type);
-#endif
-	}
 
 	void NullShaderObject::OGLAttachShader(ShaderType type, RenderEffect const & effect,
 		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
@@ -1623,22 +1440,21 @@ namespace KlayGE
 		// OGLESShaderObject::AttachShader
 
 #ifndef KLAYGE_PLATFORM_WINDOWS_STORE
-		this->CreateShaderStage(type);
+		auto& rf = Context::Instance().RenderFactoryInstance();
+		auto shader_stage = rf.MakeShaderStageObject(type);
 
-		auto ogl_so_template = checked_cast<OGLShaderObjectTemplate*>(so_template_.get());
-		auto* shader_stage = ogl_so_template->shader_stages_[type].get();
+		so_template_->shader_stages_[type] = shader_stage;
 		if (type == ST_DomainShader)
 		{
-			auto* hull_shader_stage = checked_cast<OGLHullShaderStageObject*>(ogl_so_template->shader_stages_[ST_HullShader].get());
-			checked_cast<OGLDomainShaderStageObject*>(shader_stage)
+			auto* hull_shader_stage = checked_cast<OGLHullShaderStageObject*>(so_template_->shader_stages_[ST_HullShader].get());
+			checked_cast<OGLDomainShaderStageObject*>(shader_stage.get())
 				->DsParameters(hull_shader_stage->DsPartitioning(), hull_shader_stage->DsOutputPrimitive());
 		}
 		shader_stage->AttachShader(effect, tech, pass, shader_desc_ids);
-		is_shader_validate_[type] = shader_stage->Validate();
 
-		if (is_shader_validate_[type])
+		if (shader_stage->Validate())
 		{
-			this->OGLAppendTexSamplerBinds(type, effect, shader_stage->TexSamplerPairs());
+			this->OGLAppendTexSamplerBinds(type, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
 		}
 #else
 		KFL_UNUSED(type);
@@ -1660,15 +1476,10 @@ namespace KlayGE
 		KFL_UNUSED(pass);
 
 #ifndef KLAYGE_PLATFORM_WINDOWS_STORE
-		auto so = checked_cast<NullShaderObject*>(shared_so.get());
+		auto* so = checked_cast<NullShaderObject*>(shared_so.get());
 
-		auto ogl_so_template = checked_cast<OGLShaderObjectTemplate*>(so_template_.get());
-		auto ogl_so_so_template = checked_cast<OGLShaderObjectTemplate*>(so->so_template_.get());
-
-		is_shader_validate_[type] = so->is_shader_validate_[type];
-		ogl_so_template->shader_stages_[type] = ogl_so_so_template->shader_stages_[type];
-
-		if (is_shader_validate_[type])
+		so_template_->shader_stages_[type] = so->so_template_->shader_stages_[type];
+		if (so_template_->shader_stages_[type] && so_template_->shader_stages_[type]->Validate())
 		{
 			switch (type)
 			{
@@ -1685,7 +1496,8 @@ namespace KlayGE
 				break;
 			}
 
-			this->OGLAppendTexSamplerBinds(type, effect, ogl_so_template->shader_stages_[type]->TexSamplerPairs());
+			this->OGLAppendTexSamplerBinds(
+				type, effect, checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get())->TexSamplerPairs());
 		}
 #else
 		KFL_UNUSED(type);
@@ -1701,14 +1513,13 @@ namespace KlayGE
 		KFL_UNUSED(effect);
 
 #ifndef KLAYGE_PLATFORM_WINDOWS_STORE
-		auto ogl_so_template = checked_cast<OGLShaderObjectTemplate*>(so_template_.get());
-
 		is_validate_ = true;
 		for (size_t type = 0; type < ShaderObject::ST_NumShaderTypes; ++type)
 		{
-			if (ogl_so_template->shader_stages_[type] && !ogl_so_template->shader_stages_[type]->ShaderFuncName().empty())
+			auto const& shader_stage = so_template_->shader_stages_[type];
+			if (shader_stage)
 			{
-				is_validate_ &= is_shader_validate_[type];
+				is_validate_ &= shader_stage->Validate();
 			}
 		}
 #endif

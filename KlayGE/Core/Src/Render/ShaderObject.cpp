@@ -299,10 +299,42 @@ namespace
 
 namespace KlayGE
 {
-	ShaderObject::ShaderObject()
-		: has_discard_(false), has_tessellation_(false),
-			cs_block_size_x_(0), cs_block_size_y_(0), cs_block_size_z_(0)
+	ShaderStageObject::ShaderStageObject(ShaderObject::ShaderType stage)
+		: stage_(stage)
 	{
+	}
+
+	ShaderStageObject::~ShaderStageObject() = default;
+
+
+	ShaderObject::ShaderObject() : ShaderObject(MakeSharedPtr<ShaderObjectTemplate>())
+	{
+	}
+
+	ShaderObject::ShaderObject(std::shared_ptr<ShaderObjectTemplate> const& so_template) : so_template_(so_template)
+	{
+	}
+
+	ShaderObject::~ShaderObject() = default;
+	
+	bool ShaderObject::StreamIn(ResIdentifierPtr const& res, ShaderType type, RenderEffect const& effect,
+		std::array<uint32_t, ST_NumShaderTypes> const& shader_desc_ids)
+	{
+		uint32_t len;
+		res->read(&len, sizeof(len));
+		len = LE2Native(len);
+		std::vector<uint8_t> native_shader_block(len);
+		if (len > 0)
+		{
+			res->read(&native_shader_block[0], len * sizeof(native_shader_block[0]));
+		}
+
+		return this->AttachNativeShader(type, effect, shader_desc_ids, native_shader_block);
+	}
+
+	void ShaderObject::StreamOut(std::ostream& os, ShaderType type)
+	{
+		so_template_->shader_stages_[type]->StreamOut(os);
 	}
 
 #if KLAYGE_IS_DEV_PLATFORM

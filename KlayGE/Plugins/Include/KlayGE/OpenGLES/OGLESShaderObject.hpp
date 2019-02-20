@@ -26,22 +26,17 @@ namespace DXBC2GLSL
 
 namespace KlayGE
 {
-	class OGLESShaderStageObject
+	class OGLESShaderStageObject : public ShaderStageObject
 	{
 	public:
 		OGLESShaderStageObject(ShaderObject::ShaderType stage, GLenum gl_shader_type);
-		virtual ~OGLESShaderStageObject();
+		~OGLESShaderStageObject() override;
 
 		void StreamIn(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids,
-			std::vector<uint8_t> const& native_shader_block);
-		void StreamOut(std::ostream& os);
+			std::vector<uint8_t> const& native_shader_block) override;
+		void StreamOut(std::ostream& os) override;
 		void AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids);
-
-		bool Validate() const
-		{
-			return is_validate_;
-		}
+			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
 		std::string const& GlslSource() const
 		{
@@ -83,17 +78,10 @@ namespace KlayGE
 		}
 
 	private:
-		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const;
-		void CreateHwShader();
+		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
+		void CreateHwShader(
+			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
 
-		virtual void StageSpecificStreamIn(std::istream& native_shader_stream)
-		{
-			KFL_UNUSED(native_shader_stream);
-		}
-		virtual void StageSpecificStreamOut(std::ostream& os)
-		{
-			KFL_UNUSED(os);
-		}
 #if KLAYGE_IS_DEV_PLATFORM
 		virtual void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl)
 		{
@@ -102,11 +90,9 @@ namespace KlayGE
 #endif
 
 	protected:
-		const ShaderObject::ShaderType stage_;
 		const GLenum gl_shader_type_;
 
 		bool is_available_;
-		bool is_validate_;
 
 		std::string shader_func_name_;
 		std::string glsl_src_;
@@ -229,10 +215,6 @@ namespace KlayGE
 		bool AttachNativeShader(ShaderType type, RenderEffect const & effect,
 			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
 
-		bool StreamIn(ResIdentifierPtr const & res, ShaderType type, RenderEffect const & effect,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids) override;
-		void StreamOut(std::ostream& os, ShaderType type) override;
-
 		void AttachShader(ShaderType type, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass,
 			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids) override;
@@ -256,7 +238,6 @@ namespace KlayGE
 		{
 			GLenum glsl_bin_format_;
 			std::vector<uint8_t> glsl_bin_program_;
-			std::array<std::shared_ptr<OGLESShaderStageObject>, ST_NumShaderTypes> shader_stages_;
 			std::vector<std::string> glsl_tfb_varyings_;
 			bool tfb_separate_attribs_;
 		};
@@ -271,10 +252,10 @@ namespace KlayGE
 		};
 
 	public:
-		explicit OGLESShaderObject(std::shared_ptr<OGLESShaderObjectTemplate> const & so_template);
+		OGLESShaderObject(
+			std::shared_ptr<ShaderObjectTemplate> const& so_template, std::shared_ptr<OGLESShaderObjectTemplate> const& gl_so_template);
 
 	private:
-		void CreateShaderStage(ShaderType stage);
 		void AppendTexSamplerBinds(
 			ShaderType stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs);
 		void LinkGLSL();
@@ -282,7 +263,7 @@ namespace KlayGE
 		void FillTFBVaryings(ShaderDesc const & sd);
 
 	private:
-		std::shared_ptr<OGLESShaderObjectTemplate> so_template_;
+		std::shared_ptr<OGLESShaderObjectTemplate> gl_so_template_;
 
 		GLuint glsl_program_;
 

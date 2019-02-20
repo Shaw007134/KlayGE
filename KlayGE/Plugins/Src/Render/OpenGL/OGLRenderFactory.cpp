@@ -11,6 +11,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <KlayGE/KlayGE.hpp>
+#include <KFL/ErrorHandling.hpp>
 #include <KFL/Util.hpp>
 #include <KFL/Math.hpp>
 
@@ -262,6 +263,41 @@ namespace KlayGE
 	ShaderObjectPtr OGLRenderFactory::MakeShaderObject()
 	{
 		return MakeSharedPtr<OGLShaderObject>();
+	}
+
+	ShaderStageObjectPtr OGLRenderFactory::MakeShaderStageObject(ShaderObject::ShaderType stage)
+	{
+		std::shared_ptr<OGLShaderStageObject> ret;
+		switch (stage)
+		{
+		case ShaderObject::ST_VertexShader:
+			ret = MakeSharedPtr<OGLVertexShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_PixelShader:
+			ret = MakeSharedPtr<OGLPixelShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_GeometryShader:
+			ret = MakeSharedPtr<OGLGeometryShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_ComputeShader:
+			ret = MakeSharedPtr<OGLComputeShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_HullShader:
+			ret = MakeSharedPtr<OGLHullShaderStageObject>();
+			break;
+
+		case ShaderObject::ST_DomainShader:
+			ret = MakeSharedPtr<OGLDomainShaderStageObject>();
+			break;
+
+		default:
+			KFL_UNREACHABLE("Invalid shader stage");
+		}
+		return ret;
 	}
 
 	std::unique_ptr<RenderEngine> OGLRenderFactory::DoMakeRenderEngine()

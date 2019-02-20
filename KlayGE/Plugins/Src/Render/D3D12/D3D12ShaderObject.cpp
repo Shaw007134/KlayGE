@@ -206,11 +206,9 @@ namespace
 
 namespace KlayGE
 {
-	D3D12ShaderStageObject::D3D12ShaderStageObject(ShaderObject::ShaderType stage) : stage_(stage)
+	D3D12ShaderStageObject::D3D12ShaderStageObject(ShaderObject::ShaderType stage) : ShaderStageObject(stage)
 	{
 	}
-
-	D3D12ShaderStageObject::~D3D12ShaderStageObject() = default;
 
 	void D3D12ShaderStageObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc) const
 	{
@@ -770,32 +768,32 @@ namespace KlayGE
 
 	void D3D12ComputeShaderStageObject::StageSpecificStreamIn(std::istream& native_shader_stream)
 	{
-		native_shader_stream.read(reinterpret_cast<char*>(&cs_block_size_x_), sizeof(cs_block_size_x_));
-		cs_block_size_x_ = LE2Native(cs_block_size_x_);
+		native_shader_stream.read(reinterpret_cast<char*>(&block_size_x_), sizeof(block_size_x_));
+		block_size_x_ = LE2Native(block_size_x_);
 
-		native_shader_stream.read(reinterpret_cast<char*>(&cs_block_size_y_), sizeof(cs_block_size_y_));
-		cs_block_size_y_ = LE2Native(cs_block_size_y_);
+		native_shader_stream.read(reinterpret_cast<char*>(&block_size_y_), sizeof(block_size_y_));
+		block_size_y_ = LE2Native(block_size_y_);
 
-		native_shader_stream.read(reinterpret_cast<char*>(&cs_block_size_z_), sizeof(cs_block_size_z_));
-		cs_block_size_z_ = LE2Native(cs_block_size_z_);
+		native_shader_stream.read(reinterpret_cast<char*>(&block_size_z_), sizeof(block_size_z_));
+		block_size_z_ = LE2Native(block_size_z_);
 	}
 
 	void D3D12ComputeShaderStageObject::StageSpecificStreamOut(std::ostream& os)
 	{
-		uint32_t cs_block_size_x = Native2LE(cs_block_size_x_);
-		os.write(reinterpret_cast<char const*>(&cs_block_size_x), sizeof(cs_block_size_x));
+		uint32_t block_size_x = Native2LE(block_size_x_);
+		os.write(reinterpret_cast<char const*>(&block_size_x), sizeof(block_size_x));
 
-		uint32_t cs_block_size_y = Native2LE(cs_block_size_y_);
-		os.write(reinterpret_cast<char const*>(&cs_block_size_y), sizeof(cs_block_size_y));
+		uint32_t block_size_y = Native2LE(block_size_y_);
+		os.write(reinterpret_cast<char const*>(&block_size_y), sizeof(block_size_y));
 
-		uint32_t cs_block_size_z = Native2LE(cs_block_size_z_);
-		os.write(reinterpret_cast<char const*>(&cs_block_size_z), sizeof(cs_block_size_z));
+		uint32_t block_size_z = Native2LE(block_size_z_);
+		os.write(reinterpret_cast<char const*>(&block_size_z), sizeof(block_size_z));
 	}
 
 #if KLAYGE_IS_DEV_PLATFORM
 	void D3D12ComputeShaderStageObject::StageSpecificReflection(ID3D12ShaderReflection* reflection)
 	{
-		reflection->GetThreadGroupSize(&cs_block_size_x_, &cs_block_size_y_, &cs_block_size_z_);
+		reflection->GetThreadGroupSize(&block_size_x_, &block_size_y_, &block_size_z_);
 	}
 #endif
 
@@ -883,111 +881,39 @@ namespace KlayGE
 	}
 
 
-	D3D12ShaderObject::D3D12ShaderObject() : D3D12ShaderObject(MakeSharedPtr<D3D12ShaderObjectTemplate>())
+	D3D12ShaderObject::D3D12ShaderObject()
+		: D3D12ShaderObject(MakeSharedPtr<ShaderObjectTemplate>(), MakeSharedPtr<D3D12ShaderObjectTemplate>())
 	{
 	}
 
-	D3D12ShaderObject::D3D12ShaderObject(std::shared_ptr<D3D12ShaderObjectTemplate> const & so_template)
-		: so_template_(so_template)
+	D3D12ShaderObject::D3D12ShaderObject(
+		std::shared_ptr<ShaderObjectTemplate> const& so_template, std::shared_ptr<D3D12ShaderObjectTemplate> const& d3d_so_template)
+		: ShaderObject(so_template), d3d_so_template_(d3d_so_template)
 	{
 		has_discard_ = true;
-		has_tessellation_ = false;
-		is_shader_validate_.fill(true);
 	}
 
 	bool D3D12ShaderObject::AttachNativeShader(ShaderType type, RenderEffect const & effect,
 		std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block)
 	{
-		bool ret = false;
-
-		this->CreateShaderStage(type);
+		auto& rf = Context::Instance().RenderFactoryInstance();
+		auto shader_stage = rf.MakeShaderStageObject(type);
 		
-		auto* shader_stage = so_template_->shader_stages_[type].get();
+		so_template_->shader_stages_[type] = shader_stage;
 		shader_stage->StreamIn(effect, shader_desc_ids, native_shader_block);
-		is_shader_validate_[type] = shader_stage->Validate();
-		if (is_shader_validate_[type])
+		if (shader_stage->Validate())
 		{
 			this->CreateHwResources(type, effect);
-			ret = is_shader_validate_[type];
 		}
 
-		if (type == ShaderObject::ST_ComputeShader)
-		{
-			auto const* cs_shader_stage = checked_cast<D3D12ComputeShaderStageObject*>(shader_stage);
-			cs_block_size_x_ = cs_shader_stage->CsBlockSizeX();
-			cs_block_size_y_ = cs_shader_stage->CsBlockSizeX();
-			cs_block_size_z_ = cs_shader_stage->CsBlockSizeX();
-		}
-
-		return ret;
-	}
-
-	bool D3D12ShaderObject::StreamIn(ResIdentifierPtr const & res, ShaderType type, RenderEffect const & effect,
-		std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
-	{
-		uint32_t len;
-		res->read(&len, sizeof(len));
-		len = LE2Native(len);
-		std::vector<uint8_t> native_shader_block(len);
-		if (len > 0)
-		{
-			res->read(&native_shader_block[0], len * sizeof(native_shader_block[0]));
-		}
-
-		return this->AttachNativeShader(type, effect, shader_desc_ids, native_shader_block);
-	}
-
-	void D3D12ShaderObject::StreamOut(std::ostream& os, ShaderType type)
-	{
-		so_template_->shader_stages_[type]->StreamOut(os);
-	}
-
-	void D3D12ShaderObject::CreateShaderStage(ShaderType stage)
-	{
-		std::shared_ptr<D3D12ShaderStageObject> shader_stage;
-		switch (stage)
-		{
-		case ShaderObject::ST_VertexShader:
-			shader_stage = MakeSharedPtr<D3D12VertexShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_PixelShader:
-			shader_stage = MakeSharedPtr<D3D12PixelShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_GeometryShader:
-			shader_stage = MakeSharedPtr<D3D12GeometryShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_ComputeShader:
-			shader_stage = MakeSharedPtr<D3D12ComputeShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_HullShader:
-			shader_stage = MakeSharedPtr<D3D12HullShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_DomainShader:
-			shader_stage = MakeSharedPtr<D3D12DomainShaderStageObject>();
-			break;
-
-		default:
-			KFL_UNREACHABLE("Invalid shader stage");
-		}
-		so_template_->shader_stages_[stage] = shader_stage;
+		return shader_stage->Validate();
 	}
 
 	void D3D12ShaderObject::CreateHwResources(ShaderType stage, RenderEffect const& effect)
 	{
-		auto* shader_stage = so_template_->shader_stages_[stage].get();
+		auto* shader_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[stage].get());
 		if (!shader_stage->ShaderCodeBlob().empty())
 		{
-			is_shader_validate_[stage] = shader_stage->Validate();
-			if (is_shader_validate_[stage] && ((stage == ST_HullShader) || (stage == ST_DomainShader)))
-			{
-				has_tessellation_ = true;
-			}
-
 			auto const & shader_desc = shader_stage->GetD3D12ShaderDesc();
 
 			d3d_cbuffs_[stage].resize(shader_desc.cb_desc.size());
@@ -1018,18 +944,15 @@ namespace KlayGE
 				}
 			}
 		}
-		else
-		{
-			is_shader_validate_[stage] = false;
-		}
 	}
 
 	void D3D12ShaderObject::AttachShader(ShaderType type, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
 	{
-		this->CreateShaderStage(type);
+		auto& rf = Context::Instance().RenderFactoryInstance();
+		auto shader_stage = rf.MakeShaderStageObject(type);
 
-		auto* shader_stage = so_template_->shader_stages_[type].get();
+		so_template_->shader_stages_[type] = shader_stage;
 		shader_stage->AttachShader(effect, tech, pass, shader_desc_ids);
 		this->CreateHwResources(type, effect);
 	}
@@ -1041,35 +964,9 @@ namespace KlayGE
 		{
 			D3D12ShaderObject const & so = *checked_cast<D3D12ShaderObject*>(shared_so.get());
 
-			is_shader_validate_[type] = so.is_shader_validate_[type];
-			if (is_shader_validate_[type])
+			so_template_->shader_stages_[type] = so.so_template_->shader_stages_[type];
+			if (so_template_->shader_stages_[type]->Validate())
 			{
-				so_template_->shader_stages_[type] = so.so_template_->shader_stages_[type];
-				switch (type)
-				{
-				case ST_VertexShader:
-				case ST_PixelShader:
-				case ST_GeometryShader:
-					break;
-
-				case ST_ComputeShader:
-					cs_block_size_x_ = so.cs_block_size_x_;
-					cs_block_size_y_ = so.cs_block_size_y_;
-					cs_block_size_z_ = so.cs_block_size_z_;
-					break;
-
-				case ST_HullShader:
-				case ST_DomainShader:
-					if (so_template_->shader_stages_[type])
-					{
-						has_tessellation_ = true;
-					}
-					break;
-
-				default:
-					KFL_UNREACHABLE("Invalid shader stage");
-				}
-
 				samplers_[type] = so.samplers_[type];
 				srvsrcs_[type].resize(so.srvs_[type].size(), std::make_tuple(static_cast<D3D12Resource*>(nullptr), 0, 0));
 				srvs_[type].resize(so.srvs_[type].size());
@@ -1093,50 +990,53 @@ namespace KlayGE
 		is_validate_ = true;
 		for (size_t type = 0; type < ST_NumShaderTypes; ++ type)
 		{
-			is_validate_ &= is_shader_validate_[type];
-
-			auto const* shader_stage = so_template_->shader_stages_[type].get();
-			if (shader_stage && !shader_stage->CBufferIndices().empty())
+			auto const* shader_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[type].get());
+			if (shader_stage)
 			{
-				auto const& shader_desc = shader_stage->GetD3D12ShaderDesc();
-				auto const& cbuff_indices = shader_stage->CBufferIndices();
+				is_validate_ &= shader_stage->Validate();
 
-				all_cbuff_indices.insert(all_cbuff_indices.end(), cbuff_indices.begin(), cbuff_indices.end());
-				for (size_t i = 0; i < cbuff_indices.size(); ++i)
+				if (!shader_stage->CBufferIndices().empty())
 				{
-					auto cbuff = effect.CBufferByIndex(cbuff_indices[i]);
-					cbuff->Resize(shader_desc.cb_desc[i].size);
-					BOOST_ASSERT(cbuff->NumParameters() == shader_desc.cb_desc[i].var_desc.size());
-					for (uint32_t j = 0; j < cbuff->NumParameters(); ++j)
-					{
-						RenderEffectParameter* param = effect.ParameterByIndex(cbuff->ParameterIndex(j));
-						uint32_t stride;
-						if (shader_desc.cb_desc[i].var_desc[j].elements > 0)
-						{
-							if (param->Type() != REDT_float4x4)
-							{
-								stride = 16;
-							}
-							else
-							{
-								stride = 64;
-							}
-						}
-						else
-						{
-							if (param->Type() != REDT_float4x4)
-							{
-								stride = 4;
-							}
-							else
-							{
-								stride = 16;
-							}
-						}
-						param->BindToCBuffer(*cbuff, shader_desc.cb_desc[i].var_desc[j].start_offset, stride);
-					}
+					auto const& shader_desc = shader_stage->GetD3D12ShaderDesc();
+					auto const& cbuff_indices = shader_stage->CBufferIndices();
 
-					d3d_cbuffs_[type][i] = cbuff->HWBuff().get();
+					all_cbuff_indices.insert(all_cbuff_indices.end(), cbuff_indices.begin(), cbuff_indices.end());
+					for (size_t i = 0; i < cbuff_indices.size(); ++i)
+					{
+						auto cbuff = effect.CBufferByIndex(cbuff_indices[i]);
+						cbuff->Resize(shader_desc.cb_desc[i].size);
+						BOOST_ASSERT(cbuff->NumParameters() == shader_desc.cb_desc[i].var_desc.size());
+						for (uint32_t j = 0; j < cbuff->NumParameters(); ++j)
+						{
+							RenderEffectParameter* param = effect.ParameterByIndex(cbuff->ParameterIndex(j));
+							uint32_t stride;
+							if (shader_desc.cb_desc[i].var_desc[j].elements > 0)
+							{
+								if (param->Type() != REDT_float4x4)
+								{
+									stride = 16;
+								}
+								else
+								{
+									stride = 64;
+								}
+							}
+							else
+							{
+								if (param->Type() != REDT_float4x4)
+								{
+									stride = 4;
+								}
+								else
+								{
+									stride = 16;
+								}
+							}
+							param->BindToCBuffer(*cbuff, shader_desc.cb_desc[i].var_desc[j].start_offset, stride);
+						}
+
+						d3d_cbuffs_[type][i] = cbuff->HWBuff().get();
+					}
 				}
 			}
 		}
@@ -1176,20 +1076,23 @@ namespace KlayGE
 		}
 
 		bool has_stream_output = false;
-		if (so_template_->shader_stages_[ST_GeometryShader] && so_template_->shader_stages_[ST_GeometryShader]->HasStreamOutput())
+		if (so_template_->shader_stages_[ST_GeometryShader] &&
+			checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ST_GeometryShader].get())->HasStreamOutput())
 		{
 			has_stream_output = true;
 		}
-		else if (so_template_->shader_stages_[ST_DomainShader] && so_template_->shader_stages_[ST_DomainShader]->HasStreamOutput())
+		else if (so_template_->shader_stages_[ST_DomainShader] &&
+				 checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ST_DomainShader].get())->HasStreamOutput())
 		{
 			has_stream_output = true;
 		}
-		else if (so_template_->shader_stages_[ST_VertexShader] && so_template_->shader_stages_[ST_VertexShader]->HasStreamOutput())
+		else if (so_template_->shader_stages_[ST_VertexShader] &&
+				 checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ST_VertexShader].get())->HasStreamOutput())
 		{
 			has_stream_output = true;
 		}
 
-		so_template_->root_signature_ = re.CreateRootSignature(num, !!so_template_->shader_stages_[ST_VertexShader], has_stream_output);
+		d3d_so_template_->root_signature_ = re.CreateRootSignature(num, !!so_template_->shader_stages_[ST_VertexShader], has_stream_output);
 
 		if (num_sampler > 0)
 		{
@@ -1200,10 +1103,10 @@ namespace KlayGE
 			sampler_heap_desc.NodeMask = 0;
 			ID3D12DescriptorHeap* s_heap;
 			TIFHR(device->CreateDescriptorHeap(&sampler_heap_desc, IID_ID3D12DescriptorHeap, reinterpret_cast<void**>(&s_heap)));
-			so_template_->sampler_heap_ = MakeCOMPtr(s_heap);
+			d3d_so_template_->sampler_heap_ = MakeCOMPtr(s_heap);
 
 			UINT const sampler_desc_size = re.SamplerDescSize();
-			D3D12_CPU_DESCRIPTOR_HANDLE cpu_sampler_handle = so_template_->sampler_heap_->GetCPUDescriptorHandleForHeapStart();
+			D3D12_CPU_DESCRIPTOR_HANDLE cpu_sampler_handle = d3d_so_template_->sampler_heap_->GetCPUDescriptorHandleForHeapStart();
 			for (uint32_t i = 0; i < ST_NumShaderTypes; ++ i)
 			{
 				if (!samplers_[i].empty())
@@ -1220,15 +1123,10 @@ namespace KlayGE
 	
 	ShaderObjectPtr D3D12ShaderObject::Clone(RenderEffect const & effect)
 	{
-		D3D12ShaderObjectPtr ret = MakeSharedPtr<D3D12ShaderObject>();
+		D3D12ShaderObjectPtr ret = MakeSharedPtr<D3D12ShaderObject>(so_template_, d3d_so_template_);
+
 		ret->has_discard_ = has_discard_;
-		ret->has_tessellation_ = has_tessellation_;
 		ret->is_validate_ = is_validate_;
-		ret->is_shader_validate_ = is_shader_validate_;
-		ret->cs_block_size_x_ = cs_block_size_x_;
-		ret->cs_block_size_y_ = cs_block_size_y_;
-		ret->cs_block_size_z_ = cs_block_size_z_;
-		ret->so_template_ = so_template_;
 
 		std::vector<uint32_t> all_cbuff_indices;
 		for (size_t i = 0; i < ST_NumShaderTypes; ++ i)
@@ -1240,7 +1138,7 @@ namespace KlayGE
 			ret->uavsrcs_[i].resize(uavsrcs_[i].size(), nullptr);
 			ret->uavs_[i].resize(uavs_[i].size());
 
-			auto const* shader_stage = so_template_->shader_stages_[i].get();
+			auto const* shader_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[i].get());
 			if (shader_stage && !shader_stage->CBufferIndices().empty())
 			{
 				auto const& cbuff_indices = shader_stage->CBufferIndices();
@@ -1408,10 +1306,10 @@ namespace KlayGE
 
 	void D3D12ShaderObject::UpdatePsoDesc(D3D12_GRAPHICS_PIPELINE_STATE_DESC& pso_desc)
 	{
-		pso_desc.pRootSignature = so_template_->root_signature_.get();
+		pso_desc.pRootSignature = d3d_so_template_->root_signature_.get();
 
 		{
-			auto const* ps_stage = so_template_->shader_stages_[ShaderObject::ST_PixelShader].get();
+			auto const* ps_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_PixelShader].get());
 			if (ps_stage)
 			{
 				ps_stage->UpdatePsoDesc(pso_desc);
@@ -1423,7 +1321,8 @@ namespace KlayGE
 			}
 		}
 		{
-			auto const* gs_stage = so_template_->shader_stages_[ShaderObject::ST_GeometryShader].get();
+			auto const* gs_stage =
+				checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_GeometryShader].get());
 			if (gs_stage)
 			{
 				gs_stage->UpdatePsoDesc(pso_desc);
@@ -1435,7 +1334,7 @@ namespace KlayGE
 			}
 		}
 		{
-			auto const* ds_stage = so_template_->shader_stages_[ShaderObject::ST_DomainShader].get();
+			auto const* ds_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_DomainShader].get());
 			if (ds_stage)
 			{
 				ds_stage->UpdatePsoDesc(pso_desc);
@@ -1447,7 +1346,7 @@ namespace KlayGE
 			}
 		}
 		{
-			auto const* hs_stage = so_template_->shader_stages_[ShaderObject::ST_HullShader].get();
+			auto const* hs_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_HullShader].get());
 			if (hs_stage)
 			{
 				hs_stage->UpdatePsoDesc(pso_desc);
@@ -1459,7 +1358,7 @@ namespace KlayGE
 			}
 		}
 		{
-			auto const* vs_stage = so_template_->shader_stages_[ShaderObject::ST_VertexShader].get();
+			auto const* vs_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_VertexShader].get());
 			if (vs_stage)
 			{
 				vs_stage->UpdatePsoDesc(pso_desc);
@@ -1474,9 +1373,9 @@ namespace KlayGE
 
 	void D3D12ShaderObject::UpdatePsoDesc(D3D12_COMPUTE_PIPELINE_STATE_DESC& pso_desc)
 	{
-		pso_desc.pRootSignature = so_template_->root_signature_.get();
+		pso_desc.pRootSignature = d3d_so_template_->root_signature_.get();
 
-		auto const* cs_stage = so_template_->shader_stages_[ShaderObject::ST_ComputeShader].get();
+		auto const* cs_stage = checked_cast<D3D12ShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_ComputeShader].get());
 		if (cs_stage)
 		{
 			cs_stage->UpdatePsoDesc(pso_desc);

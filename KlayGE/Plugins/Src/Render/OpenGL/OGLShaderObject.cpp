@@ -270,7 +270,7 @@ namespace
 namespace KlayGE
 {
 	OGLShaderStageObject::OGLShaderStageObject(ShaderObject::ShaderType stage, GLenum gl_shader_type)
-		: stage_(stage), gl_shader_type_(gl_shader_type)
+		: ShaderStageObject(stage), gl_shader_type_(gl_shader_type)
 	{
 	}
 
@@ -350,7 +350,7 @@ namespace KlayGE
 
 			this->StageSpecificStreamIn(native_shader_stream);
 
-			this->CreateHwShader();
+			this->CreateHwShader(effect, shader_desc_ids);
 		}
 	}
 
@@ -568,7 +568,7 @@ namespace KlayGE
 
 						this->StageSpecificAttachShader(dxbc2glsl);
 
-						this->CreateHwShader();
+						this->CreateHwShader(effect, shader_desc_ids);
 					}
 					catch (std::exception& ex)
 					{
@@ -584,8 +584,12 @@ namespace KlayGE
 		}
 	}
 
-	void OGLShaderStageObject::CreateHwShader()
+	void OGLShaderStageObject::CreateHwShader(
+		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
 	{
+		KFL_UNUSED(effect);
+		KFL_UNUSED(shader_desc_ids);
+
 		char const* glsl = glsl_src_.c_str();
 		gl_shader_ = glCreateShader(gl_shader_type_);
 		if (0 == gl_shader_)
@@ -901,16 +905,14 @@ namespace KlayGE
 	}
 
 
-	OGLShaderObject::OGLShaderObject() : OGLShaderObject(MakeSharedPtr<OGLShaderObjectTemplate>())
+	OGLShaderObject::OGLShaderObject() : OGLShaderObject(MakeSharedPtr<ShaderObjectTemplate>(), MakeSharedPtr<OGLShaderObjectTemplate>())
 	{
 	}
 
-	OGLShaderObject::OGLShaderObject(std::shared_ptr<OGLShaderObjectTemplate> const& so_template) : so_template_(so_template)
+	OGLShaderObject::OGLShaderObject(
+		std::shared_ptr<ShaderObjectTemplate> const& so_template, std::shared_ptr<OGLShaderObjectTemplate> const& gl_so_template)
+		: ShaderObject(so_template), gl_so_template_(gl_so_template)
 	{
-		has_discard_ = false;
-		has_tessellation_ = false;
-		is_shader_validate_.fill(true);
-
 		glsl_program_ = glCreateProgram();
 	}
 
@@ -922,61 +924,38 @@ namespace KlayGE
 	bool OGLShaderObject::AttachNativeShader(ShaderType type, RenderEffect const& effect,
 		std::array<uint32_t, ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
 	{
-		bool ret = false;
+		auto& rf = Context::Instance().RenderFactoryInstance();
+		auto shader_stage = rf.MakeShaderStageObject(type);
 
-		this->CreateShaderStage(type);
-		auto* shader_stage = so_template_->shader_stages_[type].get();
+		so_template_->shader_stages_[type] = shader_stage;
 		shader_stage->StreamIn(effect, shader_desc_ids, native_shader_block);
-		is_shader_validate_[type] = shader_stage->Validate();
-		if (is_shader_validate_[type])
+		if (shader_stage->Validate())
 		{
-			this->AppendTexSamplerBinds(type, effect, shader_stage->TexSamplerPairs());
+			this->AppendTexSamplerBinds(type, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
 			this->FillTFBVaryings(effect.GetShaderDesc(shader_desc_ids[type]));
-
-			ret = is_shader_validate_[type];
 		}
 
-		return ret;
-	}
-
-	bool OGLShaderObject::StreamIn(ResIdentifierPtr const& res, ShaderType type, RenderEffect const& effect,
-		std::array<uint32_t, ST_NumShaderTypes> const& shader_desc_ids)
-	{
-		uint32_t len;
-		res->read(&len, sizeof(len));
-		len = LE2Native(len);
-		std::vector<uint8_t> native_shader_block(len);
-		if (len > 0)
-		{
-			res->read(&native_shader_block[0], len * sizeof(native_shader_block[0]));
-		}
-
-		return this->AttachNativeShader(type, effect, shader_desc_ids, native_shader_block);
-	}
-
-	void OGLShaderObject::StreamOut(std::ostream& os, ShaderType type)
-	{
-		so_template_->shader_stages_[type]->StreamOut(os);
+		return shader_stage->Validate();
 	}
 
 	void OGLShaderObject::AttachShader(ShaderType type, RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
 		std::array<uint32_t, ST_NumShaderTypes> const& shader_desc_ids)
 	{
-		this->CreateShaderStage(type);
+		auto& rf = Context::Instance().RenderFactoryInstance();
+		auto shader_stage = rf.MakeShaderStageObject(type);
 
-		auto* shader_stage = so_template_->shader_stages_[type].get();
+		so_template_->shader_stages_[type] = shader_stage;
 		if (type == ST_DomainShader)
 		{
 			auto* hull_shader_stage = checked_cast<OGLHullShaderStageObject*>(so_template_->shader_stages_[ST_HullShader].get());
-			checked_cast<OGLDomainShaderStageObject*>(shader_stage)
+			checked_cast<OGLDomainShaderStageObject*>(shader_stage.get())
 				->DsParameters(hull_shader_stage->DsPartitioning(), hull_shader_stage->DsOutputPrimitive());
 		}
 		shader_stage->AttachShader(effect, tech, pass, shader_desc_ids);
-		is_shader_validate_[type] = shader_stage->Validate();
 
-		if (is_shader_validate_[type])
+		if (shader_stage->Validate())
 		{
-			this->AppendTexSamplerBinds(type, effect, shader_stage->TexSamplerPairs());
+			this->AppendTexSamplerBinds(type, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
 			this->FillTFBVaryings(effect.GetShaderDesc(shader_desc_ids[type]));
 		}
 	}
@@ -986,17 +965,16 @@ namespace KlayGE
 	{
 		auto so = checked_cast<OGLShaderObject*>(shared_so.get());
 
-		is_shader_validate_[type] = so->is_shader_validate_[type];
 		so_template_->shader_stages_[type] = so->so_template_->shader_stages_[type];
 
-		if (is_shader_validate_[type])
+		if (so_template_->shader_stages_[type]->Validate())
 		{
 			switch (type)
 			{
 			case ST_VertexShader:
 			case ST_GeometryShader:
 			case ST_DomainShader:
-				so_template_->glsl_tfb_varyings_ = so->so_template_->glsl_tfb_varyings_;
+				gl_so_template_->glsl_tfb_varyings_ = so->gl_so_template_->glsl_tfb_varyings_;
 				break;
 			
 			case ST_PixelShader:
@@ -1007,7 +985,8 @@ namespace KlayGE
 				break;
 			}
 
-			this->AppendTexSamplerBinds(type, effect, so_template_->shader_stages_[type]->TexSamplerPairs());
+			this->AppendTexSamplerBinds(
+				type, effect, checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get())->TexSamplerPairs());
 		}
 	}
 
@@ -1016,9 +995,10 @@ namespace KlayGE
 		is_validate_ = true;
 		for (size_t type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
 		{
-			if (so_template_->shader_stages_[type] && !so_template_->shader_stages_[type]->ShaderFuncName().empty())
+			auto const& shader_stage = so_template_->shader_stages_[type];
+			if (shader_stage)
 			{
-				is_validate_ &= is_shader_validate_[type];
+				is_validate_ &= shader_stage->Validate();
 			}
 		}
 
@@ -1037,15 +1017,15 @@ namespace KlayGE
 				{
 					GLint len = 0;
 					glGetProgramiv(glsl_program_, GL_PROGRAM_BINARY_LENGTH, &len);
-					so_template_->glsl_bin_program_.resize(len);
-					glGetProgramBinary(glsl_program_, len, nullptr, &so_template_->glsl_bin_format_,
-						so_template_->glsl_bin_program_.data());
+					gl_so_template_->glsl_bin_program_.resize(len);
+					glGetProgramBinary(glsl_program_, len, nullptr, &gl_so_template_->glsl_bin_format_,
+						gl_so_template_->glsl_bin_program_.data());
 				}
 			}
 
 			for (int type = 0; type < ST_NumShaderTypes; ++ type)
 			{
-				auto const* shader_stage = so_template_->shader_stages_[type].get();
+				auto const* shader_stage = checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get());
 				if (shader_stage)
 				{
 					for (size_t pi = 0; pi < shader_stage->PNames().size(); ++pi)
@@ -1120,12 +1100,10 @@ namespace KlayGE
 
 	ShaderObjectPtr OGLShaderObject::Clone(RenderEffect const & effect)
 	{
-		OGLShaderObjectPtr ret = MakeSharedPtr<OGLShaderObject>(so_template_);
+		OGLShaderObjectPtr ret = MakeSharedPtr<OGLShaderObject>(so_template_, gl_so_template_);
 
-		ret->is_shader_validate_ = is_shader_validate_;
 		ret->is_validate_ = is_validate_;
 		ret->has_discard_ = has_discard_;
-		ret->has_tessellation_ = has_tessellation_;
 
 		ret->tex_sampler_binds_.resize(tex_sampler_binds_.size());
 		for (size_t i = 0; i < tex_sampler_binds_.size(); ++ i)
@@ -1138,11 +1116,11 @@ namespace KlayGE
 
 		if (ret->is_validate_)
 		{
-			if (!so_template_->glsl_bin_program_.empty())
+			if (!gl_so_template_->glsl_bin_program_.empty())
 			{
 				glProgramParameteri(ret->glsl_program_, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
-				glProgramBinary(ret->glsl_program_, so_template_->glsl_bin_format_,
-					so_template_->glsl_bin_program_.data(), static_cast<GLsizei>(so_template_->glsl_bin_program_.size()));
+				glProgramBinary(ret->glsl_program_, gl_so_template_->glsl_bin_format_,
+					gl_so_template_->glsl_bin_program_.data(), static_cast<GLsizei>(gl_so_template_->glsl_bin_program_.size()));
 
 #ifdef KLAYGE_DEBUG
 				GLint linked = false;
@@ -1240,41 +1218,6 @@ namespace KlayGE
 		}
 	}
 
-	void OGLShaderObject::CreateShaderStage(ShaderType type)
-	{
-		std::shared_ptr<OGLShaderStageObject> shader_stage;
-		switch (type)
-		{
-		case ShaderObject::ST_VertexShader:
-			shader_stage = MakeSharedPtr<OGLVertexShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_PixelShader:
-			shader_stage = MakeSharedPtr<OGLPixelShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_GeometryShader:
-			shader_stage = MakeSharedPtr<OGLGeometryShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_ComputeShader:
-			shader_stage = MakeSharedPtr<OGLComputeShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_HullShader:
-			shader_stage = MakeSharedPtr<OGLHullShaderStageObject>();
-			break;
-
-		case ShaderObject::ST_DomainShader:
-			shader_stage = MakeSharedPtr<OGLDomainShaderStageObject>();
-			break;
-
-		default:
-			KFL_UNREACHABLE("Invalid shader stage");
-		}
-		so_template_->shader_stages_[type] = shader_stage;
-	}
-
 	void OGLShaderObject::AppendTexSamplerBinds(
 		ShaderType stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs)
 	{
@@ -1305,27 +1248,24 @@ namespace KlayGE
 	{
 		for (size_t type = 0; type < ST_NumShaderTypes; ++type)
 		{
-			if (is_shader_validate_[type])
+			auto const* shader_stage = checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get());
+			if (shader_stage)
 			{
-				auto const* shader_stage = so_template_->shader_stages_[type].get();
-				if (shader_stage && !shader_stage->ShaderFuncName().empty())
-				{
-					BOOST_ASSERT(shader_stage->GlShader() != 0);
-					glAttachShader(glsl_program_, shader_stage->GlShader());
-				}
+				BOOST_ASSERT(shader_stage->GlShader() != 0);
+				glAttachShader(glsl_program_, shader_stage->GlShader());
 			}
 		}
 
-		if (!so_template_->glsl_tfb_varyings_.empty())
+		if (!gl_so_template_->glsl_tfb_varyings_.empty())
 		{
-			std::vector<GLchar const *> names(so_template_->glsl_tfb_varyings_.size());
-			for (size_t i = 0; i < so_template_->glsl_tfb_varyings_.size(); ++ i)
+			std::vector<GLchar const *> names(gl_so_template_->glsl_tfb_varyings_.size());
+			for (size_t i = 0; i < gl_so_template_->glsl_tfb_varyings_.size(); ++ i)
 			{
-				names[i] = so_template_->glsl_tfb_varyings_[i].c_str();
+				names[i] = gl_so_template_->glsl_tfb_varyings_[i].c_str();
 			}
 
-			glTransformFeedbackVaryings(glsl_program_, static_cast<GLsizei>(so_template_->glsl_tfb_varyings_.size()),
-				&names[0], so_template_->tfb_separate_attribs_ ? GL_SEPARATE_ATTRIBS : GL_INTERLEAVED_ATTRIBS);
+			glTransformFeedbackVaryings(glsl_program_, static_cast<GLsizei>(gl_so_template_->glsl_tfb_varyings_.size()),
+				&names[0], gl_so_template_->tfb_separate_attribs_ ? GL_SEPARATE_ATTRIBS : GL_INTERLEAVED_ATTRIBS);
 		}
 
 		glLinkProgram(glsl_program_);
@@ -1338,7 +1278,8 @@ namespace KlayGE
 			std::string shader_names;
 			for (size_t type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
 			{
-				std::string const& func_name = so_template_->shader_stages_[type]->ShaderFuncName();
+				std::string const& func_name =
+					checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get())->ShaderFuncName();
 				if (!func_name.empty())
 				{
 					shader_names += func_name + '/';
@@ -1397,7 +1338,7 @@ namespace KlayGE
 
 					if (shader_type != ST_NumShaderTypes)
 					{
-						PrintGlslError(so_template_->shader_stages_[shader_type]->GlslSource(),
+						PrintGlslError(checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[shader_type].get())->GlslSource(),
 							std::string_view(info.data(), info.size()));
 					}
 					else
@@ -1502,7 +1443,7 @@ namespace KlayGE
 	void OGLShaderObject::FillTFBVaryings(ShaderDesc const & sd)
 	{
 		int slot = -1;
-		so_template_->tfb_separate_attribs_ = false;
+		gl_so_template_->tfb_separate_attribs_ = false;
 		for (auto const & decl : sd.so_decl)
 		{
 			if (slot < 0)
@@ -1513,7 +1454,7 @@ namespace KlayGE
 			{
 				if (slot != decl.slot)
 				{
-					so_template_->tfb_separate_attribs_ = true;
+					gl_so_template_->tfb_separate_attribs_ = true;
 				}
 			}
 
@@ -1560,14 +1501,14 @@ namespace KlayGE
 				KFL_UNREACHABLE("Invalid usage");
 			}
 
-			so_template_->glsl_tfb_varyings_.push_back(glsl_param_name);
+			gl_so_template_->glsl_tfb_varyings_.push_back(glsl_param_name);
 		}
 	}
 
 	void OGLShaderObject::Bind()
 	{
 		if (!so_template_->shader_stages_[ShaderObject::ST_PixelShader] ||
-			so_template_->shader_stages_[ShaderObject::ST_PixelShader]->GlslSource().empty())
+			checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_PixelShader].get())->GlslSource().empty())
 		{
 			glEnable(GL_RASTERIZER_DISCARD);
 		}
@@ -1622,7 +1563,7 @@ namespace KlayGE
 	void OGLShaderObject::Unbind()
 	{
 		if (!so_template_->shader_stages_[ShaderObject::ST_PixelShader] ||
-			so_template_->shader_stages_[ShaderObject::ST_PixelShader]->GlslSource().empty())
+			checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_PixelShader].get())->GlslSource().empty())
 		{
 			glDisable(GL_RASTERIZER_DISCARD);
 		}
