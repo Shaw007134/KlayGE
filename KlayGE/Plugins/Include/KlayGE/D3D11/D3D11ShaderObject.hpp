@@ -65,13 +65,13 @@ namespace KlayGE
 	class D3D11ShaderStageObject : public ShaderStageObject
 	{
 	public:
-		explicit D3D11ShaderStageObject(ShaderObject::ShaderType stage);
+		explicit D3D11ShaderStageObject(ShaderStage stage);
 
-		void StreamIn(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids,
+		void StreamIn(RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids,
 			std::vector<uint8_t> const& native_shader_block) override;
 		void StreamOut(std::ostream& os) override;
 		void AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 		std::vector<uint8_t> const& ShaderCodeBlob() const
 		{
@@ -120,14 +120,14 @@ namespace KlayGE
 
 	protected:
 		ID3D11GeometryShaderPtr CreateGeometryShaderWithStreamOutput(RenderEffect const& effect,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids, ArrayRef<uint8_t> code_blob,
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids, ArrayRef<uint8_t> code_blob,
 			std::vector<ShaderDesc::StreamOutputDecl> const& so_decl);
 
 	private:
 		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 		void FillCBufferIndices(RenderEffect const& effect);
 		void CreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 		virtual void ClearHwShader() = 0;
 
 #if KLAYGE_IS_DEV_PLATFORM
@@ -174,7 +174,7 @@ namespace KlayGE
 		void StageSpecificReflection(ID3D11ShaderReflection* reflection) override;
 #endif
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		ID3D11VertexShaderPtr vertex_shader_;
@@ -196,7 +196,7 @@ namespace KlayGE
 	private:
 		void ClearHwShader() override;
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		ID3D11PixelShaderPtr pixel_shader_;
@@ -215,7 +215,7 @@ namespace KlayGE
 	private:
 		void ClearHwShader() override;
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		ID3D11GeometryShaderPtr geometry_shader_;
@@ -247,7 +247,7 @@ namespace KlayGE
 	private:
 		void ClearHwShader() override;
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 		void StageSpecificStreamIn(std::istream& native_shader_stream) override;
 		void StageSpecificStreamOut(std::ostream& os) override;
@@ -274,7 +274,7 @@ namespace KlayGE
 	private:
 		void ClearHwShader() override;
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		ID3D11HullShaderPtr hull_shader_;
@@ -297,7 +297,7 @@ namespace KlayGE
 	private:
 		void ClearHwShader() override;
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		ID3D11DomainShaderPtr domain_shader_;
@@ -309,13 +309,13 @@ namespace KlayGE
 	public:
 		D3D11ShaderObject();
 
-		bool AttachNativeShader(ShaderType type, RenderEffect const & effect,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
+		bool AttachNativeShader(ShaderStage stage, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
 
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids) override;
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids) override;
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so) override;
 		void LinkShaders(RenderEffect const & effect) override;
 		ShaderObjectPtr Clone(RenderEffect const & effect) override;
@@ -338,17 +338,17 @@ namespace KlayGE
 		explicit D3D11ShaderObject(std::shared_ptr<ShaderObjectTemplate> const& so_template);
 
 	private:
-		ParameterBind GetBindFunc(ShaderType type, uint32_t offset, RenderEffectParameter* param);
+		ParameterBind GetBindFunc(ShaderStage stage, uint32_t offset, RenderEffectParameter* param);
 
-		void CreateHwResources(ShaderType stage, RenderEffect const & effect);
+		void CreateHwResources(ShaderStage stage, RenderEffect const & effect);
 
 	private:
-		std::array<std::vector<ParameterBind>, ST_NumShaderTypes> param_binds_;
+		std::array<std::vector<ParameterBind>, NumShaderStages> param_binds_;
 
-		std::array<std::vector<ID3D11SamplerState*>, ST_NumShaderTypes> samplers_;
-		std::array<std::vector<std::tuple<void*, uint32_t, uint32_t>>, ST_NumShaderTypes> srvsrcs_;
-		std::array<std::vector<ID3D11ShaderResourceView*>, ST_NumShaderTypes> srvs_;
-		std::array<std::vector<ID3D11Buffer*>, ST_NumShaderTypes> d3d11_cbuffs_;
+		std::array<std::vector<ID3D11SamplerState*>, NumShaderStages> samplers_;
+		std::array<std::vector<std::tuple<void*, uint32_t, uint32_t>>, NumShaderStages> srvsrcs_;
+		std::array<std::vector<ID3D11ShaderResourceView*>, NumShaderStages> srvs_;
+		std::array<std::vector<ID3D11Buffer*>, NumShaderStages> d3d11_cbuffs_;
 		std::vector<void*> uavsrcs_;
 		std::vector<ID3D11UnorderedAccessView*> uavs_;
 

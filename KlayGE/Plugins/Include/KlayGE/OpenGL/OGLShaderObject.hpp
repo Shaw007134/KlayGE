@@ -43,14 +43,14 @@ namespace KlayGE
 	class OGLShaderStageObject : public ShaderStageObject
 	{
 	public:
-		OGLShaderStageObject(ShaderObject::ShaderType stage, GLenum gl_shader_type);
+		OGLShaderStageObject(ShaderStage stage, GLenum gl_shader_type);
 		~OGLShaderStageObject() override;
 		
-		void StreamIn(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids,
+		void StreamIn(RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids,
 			std::vector<uint8_t> const& native_shader_block) override;
 		void StreamOut(std::ostream& os) override;
 		void AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 		
 		std::string const& GlslSource() const
 		{
@@ -94,7 +94,7 @@ namespace KlayGE
 	private:
 		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 		void CreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 		virtual void StageSpecificAttachShader(DXBC2GLSL::DXBC2GLSL const& dxbc2glsl)
 		{
@@ -213,13 +213,13 @@ namespace KlayGE
 		OGLShaderObject();
 		~OGLShaderObject();
 
-		bool AttachNativeShader(ShaderType type, RenderEffect const & effect,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
+		bool AttachNativeShader(ShaderStage stage, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
 
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids) override;
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids) override;
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so) override;
 		void LinkShaders(RenderEffect const & effect) override;
 		ShaderObjectPtr Clone(RenderEffect const & effect) override;
@@ -258,7 +258,7 @@ namespace KlayGE
 
 	private:
 		void AppendTexSamplerBinds(
-			ShaderType stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs);
+			ShaderStage stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs);
 		void LinkGLSL();
 		void AttachUBOs(RenderEffect const & effect);
 		void FillTFBVaryings(ShaderDesc const & sd);

@@ -82,13 +82,13 @@ namespace KlayGE
 	class D3D12ShaderStageObject : public ShaderStageObject
 	{
 	public:
-		explicit D3D12ShaderStageObject(ShaderObject::ShaderType stage);
+		explicit D3D12ShaderStageObject(ShaderStage stage);
 
-		void StreamIn(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids,
+		void StreamIn(RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids,
 			std::vector<uint8_t> const& native_shader_block) override;
 		void StreamOut(std::ostream& os) override;
 		void AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 		std::vector<uint8_t> const& ShaderCodeBlob() const
 		{
@@ -122,7 +122,7 @@ namespace KlayGE
 		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 		void FillCBufferIndices(RenderEffect const& effect);
 		void CreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 #if KLAYGE_IS_DEV_PLATFORM
 		virtual void StageSpecificReflection(ID3D12ShaderReflection* reflection)
@@ -154,7 +154,7 @@ namespace KlayGE
 
 	private:
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		std::vector<D3D12_SO_DECLARATION_ENTRY> so_decl_;
@@ -183,7 +183,7 @@ namespace KlayGE
 
 	private:
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		std::vector<D3D12_SO_DECLARATION_ENTRY> so_decl_;
@@ -217,7 +217,7 @@ namespace KlayGE
 		void StageSpecificReflection(ID3D12ShaderReflection* reflection) override;
 #endif
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		uint32_t block_size_x_, block_size_y_, block_size_z_;
@@ -232,7 +232,7 @@ namespace KlayGE
 
 	private:
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 	};
 
 	class D3D12DomainShaderStageObject : public D3D12ShaderStageObject
@@ -249,7 +249,7 @@ namespace KlayGE
 
 	private:
 		void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 	private:
 		std::vector<D3D12_SO_DECLARATION_ENTRY> so_decl_;
@@ -261,13 +261,13 @@ namespace KlayGE
 	public:
 		D3D12ShaderObject();
 
-		bool AttachNativeShader(ShaderType type, RenderEffect const & effect,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
+		bool AttachNativeShader(ShaderStage stage, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
 
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids) override;
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids) override;
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so) override;
 		void LinkShaders(RenderEffect const & effect) override;
 		ShaderObjectPtr Clone(RenderEffect const & effect) override;
@@ -275,24 +275,24 @@ namespace KlayGE
 		void Bind();
 		void Unbind();
 
-		std::vector<D3D12_SAMPLER_DESC> const & Samplers(ShaderType type) const
+		std::vector<D3D12_SAMPLER_DESC> const & Samplers(ShaderStage stage) const
 		{
-			return samplers_[type];
+			return samplers_[static_cast<uint32_t>(stage)];
 		}
 
-		std::vector<D3D12ShaderResourceViewSimulation*> const & SRVs(ShaderType type) const
+		std::vector<D3D12ShaderResourceViewSimulation*> const & SRVs(ShaderStage stage) const
 		{
-			return srvs_[type];
+			return srvs_[static_cast<uint32_t>(stage)];
 		}
 
-		std::vector<D3D12UnorderedAccessViewSimulation*> const & UAVs(ShaderType type) const
+		std::vector<D3D12UnorderedAccessViewSimulation*> const & UAVs(ShaderStage stage) const
 		{
-			return uavs_[type];
+			return uavs_[static_cast<uint32_t>(stage)];
 		}
 
-		std::vector<GraphicsBuffer*> const & CBuffers(ShaderType type) const
+		std::vector<GraphicsBuffer*> const & CBuffers(ShaderStage stage) const
 		{
-			return d3d_cbuffs_[type];
+			return d3d_cbuffs_[static_cast<uint32_t>(stage)];
 		}
 
 		ID3D12RootSignature* RootSignature() const
@@ -340,22 +340,22 @@ namespace KlayGE
 			std::shared_ptr<ShaderObjectTemplate> const& so_template, std::shared_ptr<D3D12ShaderObjectTemplate> const& d3d_so_template);
 
 	private:
-		ParameterBind GetBindFunc(ShaderType type, uint32_t offset, RenderEffectParameter* param);
+		ParameterBind GetBindFunc(ShaderStage stage, uint32_t offset, RenderEffectParameter* param);
 
-		void CreateHwResources(ShaderType stage, RenderEffect const & effect);
+		void CreateHwResources(ShaderStage stage, RenderEffect const& effect);
 		void CreateRootSignature();
 
 	private:
 		std::shared_ptr<D3D12ShaderObjectTemplate> d3d_so_template_;
 
-		std::array<std::vector<ParameterBind>, ST_NumShaderTypes> param_binds_;
+		std::array<std::vector<ParameterBind>, NumShaderStages> param_binds_;
 
-		std::array<std::vector<D3D12_SAMPLER_DESC>, ST_NumShaderTypes> samplers_;
-		std::array<std::vector<std::tuple<D3D12Resource*, uint32_t, uint32_t>>, ST_NumShaderTypes> srvsrcs_;
-		std::array<std::vector<D3D12ShaderResourceViewSimulation*>, ST_NumShaderTypes> srvs_;
-		std::array<std::vector<D3D12Resource*>, ST_NumShaderTypes> uavsrcs_;
-		std::array<std::vector<D3D12UnorderedAccessViewSimulation*>, ST_NumShaderTypes> uavs_;
-		std::array<std::vector<GraphicsBuffer*>, ST_NumShaderTypes> d3d_cbuffs_;
+		std::array<std::vector<D3D12_SAMPLER_DESC>, NumShaderStages> samplers_;
+		std::array<std::vector<std::tuple<D3D12Resource*, uint32_t, uint32_t>>, NumShaderStages> srvsrcs_;
+		std::array<std::vector<D3D12ShaderResourceViewSimulation*>, NumShaderStages> srvs_;
+		std::array<std::vector<D3D12Resource*>, NumShaderStages> uavsrcs_;
+		std::array<std::vector<D3D12UnorderedAccessViewSimulation*>, NumShaderStages> uavs_;
+		std::array<std::vector<GraphicsBuffer*>, NumShaderStages> d3d_cbuffs_;
 
 		std::vector<RenderEffectConstantBuffer*> all_cbuffs_;
 

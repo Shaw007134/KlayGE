@@ -85,13 +85,13 @@ namespace KlayGE
 	class D3DShaderStageObject : public ShaderStageObject
 	{
 	public:
-		D3DShaderStageObject(ShaderObject::ShaderType stage, bool as_d3d12);
+		D3DShaderStageObject(ShaderStage stage, bool as_d3d12);
 
-		void StreamIn(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids,
+		void StreamIn(RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids,
 			std::vector<uint8_t> const& native_shader_block) override;
 		void StreamOut(std::ostream& os) override;
 		void AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 		std::vector<uint8_t> const& ShaderCodeBlob() const
 		{
@@ -116,7 +116,7 @@ namespace KlayGE
 	private:
 		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 		void CreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override
 		{
 			KFL_UNUSED(effect);
 			KFL_UNUSED(shader_desc_ids);
@@ -225,13 +225,13 @@ namespace KlayGE
 	class OGLShaderStageObject : public ShaderStageObject
 	{
 	public:
-		OGLShaderStageObject(ShaderObject::ShaderType stage, GLenum gl_shader_type, bool as_gles);
+		OGLShaderStageObject(ShaderStage stage, GLenum gl_shader_type, bool as_gles);
 
-		void StreamIn(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids,
+		void StreamIn(RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids,
 			std::vector<uint8_t> const& native_shader_block) override;
 		void StreamOut(std::ostream& os) override;
 		void AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override;
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override;
 
 		std::string const& GlslSource() const
 		{
@@ -270,7 +270,7 @@ namespace KlayGE
 	private:
 		std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const override;
 		void CreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) override
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) override
 		{
 			KFL_UNUSED(effect);
 			KFL_UNUSED(shader_desc_ids);
@@ -398,13 +398,13 @@ namespace KlayGE
 	public:
 		NullShaderObject();
 
-		bool AttachNativeShader(ShaderType type, RenderEffect const & effect,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
+		bool AttachNativeShader(ShaderStage stage, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) override;
 
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids) override;
-		void AttachShader(ShaderType type, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids) override;
+		void AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so) override;
 		void LinkShaders(RenderEffect const & effect) override;
 		ShaderObjectPtr Clone(RenderEffect const & effect) override;
@@ -426,20 +426,18 @@ namespace KlayGE
 			std::shared_ptr<ShaderObjectTemplate> const& so_template, std::shared_ptr<NullShaderObjectTemplate> const& null_so_template);
 
 	private:
-		void D3D11AttachShader(ShaderType type, RenderEffect const & effect,
+		void D3D11AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids);
-		void D3D11AttachShader(ShaderType type, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids);
+		void D3D11AttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so);
-		void D3D11LinkShaders(RenderEffect const & effect);
 
-		void OGLAttachShader(ShaderType type, RenderEffect const & effect,
-			RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids);
-		void OGLAttachShader(ShaderType type, RenderEffect const & effect,
+		void OGLAttachShader(ShaderStage stage, RenderEffect const & effect,
+			RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, NumShaderStages> const & shader_desc_ids);
+		void OGLAttachShader(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so);
-		void OGLLinkShaders(RenderEffect const & effect);
 		void OGLAppendTexSamplerBinds(
-			ShaderType stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs);
+			ShaderStage stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs);
 
 	private:
 		std::shared_ptr<NullShaderObjectTemplate> null_so_template_;

@@ -90,9 +90,9 @@ namespace KlayGE
 		bool FullScreen() const;
 		void FullScreen(bool fs);
 
-		char const * DefaultShaderProfile(ShaderObject::ShaderType stage) const
+		char const * DefaultShaderProfile(ShaderStage stage) const
 		{
-			return shader_profiles_[stage];
+			return shader_profiles_[static_cast<uint32_t>(stage)];
 		}
 
 		void RSSetState(ID3D11RasterizerState* ras);
@@ -104,9 +104,10 @@ namespace KlayGE
 		void CSSetShader(ID3D11ComputeShader* shader);
 		void HSSetShader(ID3D11HullShader* shader);
 		void DSSetShader(ID3D11DomainShader* shader);
-		void SetShaderResources(ShaderObject::ShaderType st, std::vector<std::tuple<void*, uint32_t, uint32_t>> const & srvsrcs, std::vector<ID3D11ShaderResourceView*> const & srvs);
-		void SetSamplers(ShaderObject::ShaderType st, std::vector<ID3D11SamplerState*> const & samplers);
-		void SetConstantBuffers(ShaderObject::ShaderType st, std::vector<ID3D11Buffer*> const & cbs);
+		void SetShaderResources(ShaderStage stage, std::vector<std::tuple<void*, uint32_t, uint32_t>> const& srvsrcs,
+			std::vector<ID3D11ShaderResourceView*> const& srvs);
+		void SetSamplers(ShaderStage stage, std::vector<ID3D11SamplerState*> const& samplers);
+		void SetConstantBuffers(ShaderStage stage, std::vector<ID3D11Buffer*> const& cbs);
 		void RSSetViewports(UINT NumViewports, D3D11_VIEWPORT const * pViewports);
 		void OMSetRenderTargets(UINT num_rtvs, ID3D11RenderTargetView* const * rtvs, ID3D11DepthStencilView* dsv);
 		void OMSetRenderTargetsAndUnorderedAccessViews(UINT num_rtvs, ID3D11RenderTargetView* const * rtvs,
@@ -211,10 +212,10 @@ namespace KlayGE
 		std::vector<UINT> vb_offset_cache_;
 		ID3D11Buffer* ib_cache_;
 
-		std::array<std::vector<std::tuple<void*, uint32_t, uint32_t>>, ShaderObject::ST_NumShaderTypes> shader_srvsrc_cache_;
-		std::array<std::vector<ID3D11ShaderResourceView*>, ShaderObject::ST_NumShaderTypes> shader_srv_ptr_cache_;
-		std::array<std::vector<ID3D11SamplerState*>, ShaderObject::ST_NumShaderTypes> shader_sampler_ptr_cache_;
-		std::array<std::vector<ID3D11Buffer*>, ShaderObject::ST_NumShaderTypes> shader_cb_ptr_cache_;
+		std::array<std::vector<std::tuple<void*, uint32_t, uint32_t>>, NumShaderStages> shader_srvsrc_cache_;
+		std::array<std::vector<ID3D11ShaderResourceView*>, NumShaderStages> shader_srv_ptr_cache_;
+		std::array<std::vector<ID3D11SamplerState*>, NumShaderStages> shader_sampler_ptr_cache_;
+		std::array<std::vector<ID3D11Buffer*>, NumShaderStages> shader_cb_ptr_cache_;
 		std::vector<ID3D11UnorderedAccessView*> render_uav_ptr_cache_;
 		std::vector<uint32_t> render_uav_init_count_cache_;
 		std::vector<ID3D11UnorderedAccessView*> compute_uav_ptr_cache_;
@@ -222,7 +223,7 @@ namespace KlayGE
 		std::vector<ID3D11RenderTargetView*> rtv_ptr_cache_;
 		ID3D11DepthStencilView* dsv_ptr_cache_;
 
-		char const* shader_profiles_[ShaderObject::ST_NumShaderTypes];
+		char const* shader_profiles_[NumShaderStages];
 
 		enum StereoMethod
 		{

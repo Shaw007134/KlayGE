@@ -79,91 +79,30 @@ namespace KlayGE
 		}
 	};
 
-	class KLAYGE_CORE_API ShaderObject : boost::noncopyable
+	enum class ShaderStage
 	{
-	public:
-		enum ShaderType
-		{
-			ST_VertexShader,
-			ST_PixelShader,
-			ST_GeometryShader,
-			ST_ComputeShader,
-			ST_HullShader,
-			ST_DomainShader,
+		VertexShader,
+		PixelShader,
+		GeometryShader,
+		ComputeShader,
+		HullShader,
+		DomainShader,
 
-			ST_NumShaderTypes
-		};
-
-	public:
-		ShaderObject();
-		virtual ~ShaderObject();
-
-		ShaderStageObjectPtr const& ShaderStage(ShaderType stage) const
-		{
-			return so_template_->shader_stages_[stage];
-		}
-
-		virtual bool AttachNativeShader(ShaderType type, RenderEffect const & effect,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block) = 0;
-
-		bool StreamIn(ResIdentifierPtr const & res, ShaderType type, RenderEffect const & effect,
-			std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids);
-		void StreamOut(std::ostream& os, ShaderType type);
-
-		virtual void AttachShader(ShaderType type, RenderEffect const & effect,
-			RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids) = 0;
-		virtual void AttachShader(ShaderType type, RenderEffect const & effect,
-			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so) = 0;
-		virtual void LinkShaders(RenderEffect const & effect) = 0;
-		virtual ShaderObjectPtr Clone(RenderEffect const & effect) = 0;
-
-		virtual void Bind() = 0;
-		virtual void Unbind() = 0;
-
-		bool Validate() const
-		{
-			return is_validate_;
-		}
-
-		bool HasDiscard() const
-		{
-			return has_discard_;
-		}
-
-	protected:
-		struct ShaderObjectTemplate
-		{
-			std::array<std::shared_ptr<ShaderStageObject>, ST_NumShaderTypes> shader_stages_;
-		};
-
-	public:
-		ShaderObject(std::shared_ptr<ShaderObjectTemplate> const& so_template);
-
-		static std::vector<uint8_t> CompileToDXBC(ShaderType type, RenderEffect const & effect,
-			RenderTechnique const & tech, RenderPass const & pass,
-			std::vector<std::pair<char const *, char const *>> const & api_special_macros,
-			char const * func_name, char const * shader_profile, uint32_t flags);
-		static void ReflectDXBC(std::vector<uint8_t> const & code, void** reflector);
-		static std::vector<uint8_t> StripDXBC(std::vector<uint8_t> const & code, uint32_t strip_flags);
-
-	protected:
-		std::shared_ptr<ShaderObjectTemplate> so_template_;
-		
-		bool is_validate_;
-		bool has_discard_ = false;
+		Num,
 	};
+	uint32_t constexpr NumShaderStages = static_cast<uint32_t>(ShaderStage::Num);
 
 	class KLAYGE_CORE_API ShaderStageObject : boost::noncopyable
 	{
 	public:
-		explicit ShaderStageObject(ShaderObject::ShaderType stage);
+		explicit ShaderStageObject(ShaderStage stage);
 		virtual ~ShaderStageObject();
 
-		virtual void StreamIn(RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids,
+		virtual void StreamIn(RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids,
 			std::vector<uint8_t> const& native_shader_block) = 0;
 		virtual void StreamOut(std::ostream& os) = 0;
 		virtual void AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-			std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) = 0;
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids) = 0;
 
 		bool Validate() const
 		{
@@ -187,7 +126,7 @@ namespace KlayGE
 	protected:
 		virtual std::string_view GetShaderProfile(RenderEffect const& effect, uint32_t shader_desc_id) const = 0;
 		virtual void CreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids) = 0;
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) = 0;
 
 		virtual void StageSpecificStreamIn(std::istream& native_shader_stream)
 		{
@@ -198,16 +137,82 @@ namespace KlayGE
 			KFL_UNUSED(os);
 		}
 		virtual void StageSpecificCreateHwShader(
-			RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
+			RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids)
 		{
 			KFL_UNUSED(effect);
 			KFL_UNUSED(shader_desc_ids);
 		}
 
 	protected:
-		const ShaderObject::ShaderType stage_;
+		const ShaderStage stage_;
 
 		bool is_validate_;
+	};
+
+	class KLAYGE_CORE_API ShaderObject : boost::noncopyable
+	{
+	public:
+		ShaderObject();
+		virtual ~ShaderObject();
+		
+		void AttachStage(ShaderStage stage, ShaderStageObjectPtr const& shader_stage)
+		{
+			so_template_->shader_stages_[static_cast<uint32_t>(stage)] = shader_stage;
+		}
+		ShaderStageObjectPtr const& Stage(ShaderStage stage) const
+		{
+			return so_template_->shader_stages_[static_cast<uint32_t>(stage)];
+		}
+
+		virtual bool AttachNativeShader(ShaderStage stage, RenderEffect const& effect,
+			std::array<uint32_t, NumShaderStages> const& shader_desc_ids,
+			std::vector<uint8_t> const& native_shader_block) = 0;
+
+		bool StreamIn(ResIdentifierPtr const & res, ShaderStage stage, RenderEffect const & effect,
+			std::array<uint32_t, NumShaderStages> const & shader_desc_ids);
+		void StreamOut(std::ostream& os, ShaderStage stage);
+
+		virtual void AttachShader(ShaderStage stage, RenderEffect const& effect, RenderTechnique const& tech,
+			RenderPass const& pass, std::array<uint32_t, NumShaderStages> const& shader_desc_ids) = 0;
+		virtual void AttachShader(ShaderStage stage, RenderEffect const & effect,
+			RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so) = 0;
+		virtual void LinkShaders(RenderEffect const & effect) = 0;
+		virtual ShaderObjectPtr Clone(RenderEffect const & effect) = 0;
+
+		virtual void Bind() = 0;
+		virtual void Unbind() = 0;
+
+		bool Validate() const
+		{
+			return is_validate_;
+		}
+
+		bool HasDiscard() const
+		{
+			return has_discard_;
+		}
+
+	protected:
+		struct ShaderObjectTemplate
+		{
+			std::array<std::shared_ptr<ShaderStageObject>, NumShaderStages> shader_stages_;
+		};
+
+	public:
+		ShaderObject(std::shared_ptr<ShaderObjectTemplate> const& so_template);
+
+		static std::vector<uint8_t> CompileToDXBC(ShaderStage stage, RenderEffect const & effect,
+			RenderTechnique const & tech, RenderPass const & pass,
+			std::vector<std::pair<char const *, char const *>> const & api_special_macros,
+			char const * func_name, char const * shader_profile, uint32_t flags);
+		static void ReflectDXBC(std::vector<uint8_t> const & code, void** reflector);
+		static std::vector<uint8_t> StripDXBC(std::vector<uint8_t> const & code, uint32_t strip_flags);
+
+	protected:
+		std::shared_ptr<ShaderObjectTemplate> so_template_;
+		
+		bool is_validate_;
+		bool has_discard_ = false;
 	};
 }
 

@@ -408,7 +408,7 @@ namespace KlayGE
 		return MakeSharedPtr<NullShaderObject>();
 	}
 
-	ShaderStageObjectPtr NullRenderFactory::MakeShaderStageObject(ShaderObject::ShaderType stage)
+	ShaderStageObjectPtr NullRenderFactory::MakeShaderStageObject(ShaderStage stage)
 	{
 		bool as_d3d11 = false;
 		bool as_d3d12 = false;
@@ -441,7 +441,7 @@ namespace KlayGE
 		{
 			switch (stage)
 			{
-			case ShaderObject::ST_VertexShader:
+			case ShaderStage::VertexShader:
 				if (as_d3d11)
 				{
 					ret = MakeSharedPtr<D3D11VertexShaderStageObject>();
@@ -453,23 +453,23 @@ namespace KlayGE
 				}
 				break;
 
-			case ShaderObject::ST_PixelShader:
+			case ShaderStage::PixelShader:
 				ret = MakeSharedPtr<D3DPixelShaderStageObject>(as_d3d12);
 				break;
 
-			case ShaderObject::ST_GeometryShader:
+			case ShaderStage::GeometryShader:
 				ret = MakeSharedPtr<D3DGeometryShaderStageObject>(as_d3d12);
 				break;
 
-			case ShaderObject::ST_ComputeShader:
+			case ShaderStage::ComputeShader:
 				ret = MakeSharedPtr<D3DComputeShaderStageObject>(as_d3d12);
 				break;
 
-			case ShaderObject::ST_HullShader:
+			case ShaderStage::HullShader:
 				ret = MakeSharedPtr<D3DHullShaderStageObject>(as_d3d12);
 				break;
 
-			case ShaderObject::ST_DomainShader:
+			case ShaderStage::DomainShader:
 				ret = MakeSharedPtr<D3DDomainShaderStageObject>(as_d3d12);
 				break;
 
@@ -481,15 +481,15 @@ namespace KlayGE
 		{
 			switch (stage)
 			{
-			case ShaderObject::ST_VertexShader:
+			case ShaderStage::VertexShader:
 				ret = MakeSharedPtr<OGLVertexShaderStageObject>(as_gles);
 				break;
 
-			case ShaderObject::ST_PixelShader:
+			case ShaderStage::PixelShader:
 				ret = MakeSharedPtr<OGLPixelShaderStageObject>(as_gles);
 				break;
 
-			case ShaderObject::ST_GeometryShader:
+			case ShaderStage::GeometryShader:
 				if (as_gl)
 				{
 					ret = MakeSharedPtr<OGLGeometryShaderStageObject>();
@@ -501,15 +501,15 @@ namespace KlayGE
 				}
 				break;
 
-			case ShaderObject::ST_ComputeShader:
+			case ShaderStage::ComputeShader:
 				ret = MakeSharedPtr<OGLComputeShaderStageObject>(as_gles);
 				break;
 
-			case ShaderObject::ST_HullShader:
+			case ShaderStage::HullShader:
 				ret = MakeSharedPtr<OGLHullShaderStageObject>(as_gles);
 				break;
 
-			case ShaderObject::ST_DomainShader:
+			case ShaderStage::DomainShader:
 				ret = MakeSharedPtr<OGLDomainShaderStageObject>(as_gles);
 				break;
 

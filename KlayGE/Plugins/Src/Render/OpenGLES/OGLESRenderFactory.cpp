@@ -272,32 +272,32 @@ namespace KlayGE
 		return MakeSharedPtr<OGLESShaderObject>();
 	}
 
-	ShaderStageObjectPtr OGLESRenderFactory::MakeShaderStageObject(ShaderObject::ShaderType stage)
+	ShaderStageObjectPtr OGLESRenderFactory::MakeShaderStageObject(ShaderStage stage)
 	{
 		std::shared_ptr<OGLESShaderStageObject> ret;
 		switch (stage)
 		{
-		case ShaderObject::ST_VertexShader:
+		case ShaderStage::VertexShader:
 			ret = MakeSharedPtr<OGLESVertexShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_PixelShader:
+		case ShaderStage::PixelShader:
 			ret = MakeSharedPtr<OGLESPixelShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_GeometryShader:
+		case ShaderStage::GeometryShader:
 			ret = MakeSharedPtr<OGLESGeometryShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_ComputeShader:
+		case ShaderStage::ComputeShader:
 			ret = MakeSharedPtr<OGLESComputeShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_HullShader:
+		case ShaderStage::HullShader:
 			ret = MakeSharedPtr<OGLESHullShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_DomainShader:
+		case ShaderStage::DomainShader:
 			ret = MakeSharedPtr<OGLESDomainShaderStageObject>();
 			break;
 

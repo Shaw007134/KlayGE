@@ -3858,34 +3858,34 @@ namespace KlayGE
 		for (uint32_t i = 0; i < this->NumShaderFragments(); ++ i)
 		{
 			RenderShaderFragment const & effect_shader_frag = this->ShaderFragmentByIndex(i);
-			ShaderObject::ShaderType const shader_type = effect_shader_frag.Type();
-			switch (shader_type)
+			ShaderStage const shader_stage = effect_shader_frag.Stage();
+			switch (shader_stage)
 			{
-			case ShaderObject::ST_VertexShader:
+			case ShaderStage::VertexShader:
 				str += "#if KLAYGE_VERTEX_SHADER\n";
 				break;
 
-			case ShaderObject::ST_PixelShader:
+			case ShaderStage::PixelShader:
 				str += "#if KLAYGE_PIXEL_SHADER\n";
 				break;
 
-			case ShaderObject::ST_GeometryShader:
+			case ShaderStage::GeometryShader:
 				str += "#if KLAYGE_GEOMETRY_SHADER\n";
 				break;
 
-			case ShaderObject::ST_ComputeShader:
+			case ShaderStage::ComputeShader:
 				str += "#if KLAYGE_COMPUTE_SHADER\n";
 				break;
 
-			case ShaderObject::ST_HullShader:
+			case ShaderStage::HullShader:
 				str += "#if KLAYGE_HULL_SHADER\n";
 				break;
 
-			case ShaderObject::ST_DomainShader:
+			case ShaderStage::DomainShader:
 				str += "#if KLAYGE_DOMAIN_SHADER\n";
 				break;
 
-			case ShaderObject::ST_NumShaderTypes:
+			case ShaderStage::Num:
 				break;
 
 			default:
@@ -3905,7 +3905,7 @@ namespace KlayGE
 			{
 				str += "#endif\n";
 			}
-			if (shader_type != ShaderObject::ST_NumShaderTypes)
+			if (shader_stage != ShaderStage::Num)
 			{
 				str += "#endif\n";
 			}
@@ -4074,7 +4074,7 @@ namespace KlayGE
 				}
 
 				has_discard_ |= pass->GetShaderObject(effect)->HasDiscard();
-				has_tessellation_ |= !!pass->GetShaderObject(effect)->ShaderStage(ShaderObject::ST_HullShader);
+				has_tessellation_ |= !!pass->GetShaderObject(effect)->Stage(ShaderStage::HullShader);
 			}
 			if (transparent_)
 			{
@@ -4141,7 +4141,7 @@ namespace KlayGE
 			is_validate_ &= pass->Validate();
 
 			has_discard_ |= pass->GetShaderObject(effect)->HasDiscard();
-			has_tessellation_ |= !!pass->GetShaderObject(effect)->ShaderStage(ShaderObject::ST_HullShader);
+			has_tessellation_ |= !!pass->GetShaderObject(effect)->Stage(ShaderStage::HullShader);
 		}
 
 		return ret;
@@ -4513,31 +4513,31 @@ namespace KlayGE
 				|| (CT_HASH("geometry_shader") == state_name_hash) || (CT_HASH("compute_shader") == state_name_hash)
 				|| (CT_HASH("hull_shader") == state_name_hash) || (CT_HASH("domain_shader") == state_name_hash))
 			{
-				ShaderObject::ShaderType type;
+				ShaderStage stage;
 				if (CT_HASH("vertex_shader") == state_name_hash)
 				{
-					type = ShaderObject::ST_VertexShader;
+					stage = ShaderStage::VertexShader;
 				}
 				else if (CT_HASH("pixel_shader") == state_name_hash)
 				{
-					type = ShaderObject::ST_PixelShader;
+					stage = ShaderStage::PixelShader;
 				}
 				else if (CT_HASH("geometry_shader") == state_name_hash)
 				{
-					type = ShaderObject::ST_GeometryShader;
+					stage = ShaderStage::GeometryShader;
 				}
 				else if (CT_HASH("compute_shader") == state_name_hash)
 				{
-					type = ShaderObject::ST_ComputeShader;
+					stage = ShaderStage::ComputeShader;
 				}
 				else if (CT_HASH("hull_shader") == state_name_hash)
 				{
-					type = ShaderObject::ST_HullShader;
+					stage = ShaderStage::HullShader;
 				}
 				else
 				{
 					BOOST_ASSERT(CT_HASH("domain_shader") == state_name_hash);
-					type = ShaderObject::ST_DomainShader;
+					stage = ShaderStage::DomainShader;
 				}
 
 				ShaderDesc sd;
@@ -4545,7 +4545,7 @@ namespace KlayGE
 				sd.func_name = get_func_name(*state_node);
 				sd.macros_hash = macros_hash;
 
-				if ((ShaderObject::ST_VertexShader == type) || (ShaderObject::ST_GeometryShader == type))
+				if ((ShaderStage::VertexShader == stage) || (ShaderStage::GeometryShader == stage))
 				{
 					XMLNodePtr so_node = state_node->FirstNode("stream_output");
 					if (so_node)
@@ -4638,7 +4638,7 @@ namespace KlayGE
 					}
 				}
 
-				shader_desc_ids_[type] = effect.AddShaderDesc(sd);
+				shader_desc_ids_[static_cast<uint32_t>(stage)] = effect.AddShaderDesc(sd);
 			}
 			else
 			{
@@ -4651,24 +4651,24 @@ namespace KlayGE
 
 		auto const & shader_obj = this->GetShaderObject(effect);
 
-		for (int type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			ShaderDesc& sd = effect.GetShaderDesc(shader_desc_ids_[type]);
+			ShaderDesc& sd = effect.GetShaderDesc(shader_desc_ids_[stage]);
 			if (!sd.func_name.empty())
 			{
 				if (sd.tech_pass_type != 0xFFFFFFFF)
 				{
 					auto const & tech = *effect.TechniqueByIndex(sd.tech_pass_type >> 16);
 					auto const & pass = tech.Pass((sd.tech_pass_type >> 8) & 0xFF);
-					shader_obj->AttachShader(static_cast<ShaderObject::ShaderType>(type),
+					shader_obj->AttachShader(static_cast<ShaderStage>(stage),
 						effect, tech, pass, pass.GetShaderObject(effect));
 				}
 				else
 				{
 					auto const & tech = *effect.TechniqueByIndex(tech_index);
-					shader_obj->AttachShader(static_cast<ShaderObject::ShaderType>(type),
+					shader_obj->AttachShader(static_cast<ShaderStage>(stage),
 						effect, tech, *this, shader_desc_ids_);
-					sd.tech_pass_type = (tech_index << 16) + (pass_index << 8) + type;
+					sd.tech_pass_type = (tech_index << 16) + (pass_index << 8) + stage;
 				}
 			}
 		}
@@ -4714,24 +4714,24 @@ namespace KlayGE
 
 		render_state_obj_ = inherit_pass->render_state_obj_;
 
-		for (int type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			ShaderDesc sd = effect.GetShaderDesc(inherit_pass->shader_desc_ids_[type]);
+			ShaderDesc sd = effect.GetShaderDesc(inherit_pass->shader_desc_ids_[stage]);
 			if (!sd.func_name.empty())
 			{
 				sd.macros_hash = macros_hash;
-				sd.tech_pass_type = (tech_index << 16) + (pass_index << 8) + type;
-				shader_desc_ids_[type] = effect.AddShaderDesc(sd);
+				sd.tech_pass_type = (tech_index << 16) + (pass_index << 8) + stage;
+				shader_desc_ids_[stage] = effect.AddShaderDesc(sd);
 			}
 		}
 
-		for (int type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			ShaderDesc const & sd = effect.GetShaderDesc(shader_desc_ids_[type]);
+			ShaderDesc const & sd = effect.GetShaderDesc(shader_desc_ids_[stage]);
 			if (!sd.func_name.empty())
 			{
 				auto const & tech = *effect.TechniqueByIndex(tech_index);
-				shader_obj->AttachShader(static_cast<ShaderObject::ShaderType>(type),
+				shader_obj->AttachShader(static_cast<ShaderStage>(stage),
 					effect, tech, *this, shader_desc_ids_);
 			}
 		}
@@ -4826,9 +4826,9 @@ namespace KlayGE
 		render_state_obj_ = rf.MakeRenderStateObject(rs_desc, dss_desc, bs_desc);
 
 		res->read(&shader_desc_ids_[0], shader_desc_ids_.size() * sizeof(shader_desc_ids_[0]));
-		for (int i = 0; i < ShaderObject::ST_NumShaderTypes; ++ i)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			shader_desc_ids_[i] = LE2Native(shader_desc_ids_[i]);
+			shader_desc_ids_[stage] = LE2Native(shader_desc_ids_[stage]);
 		}
 
 		
@@ -4837,25 +4837,24 @@ namespace KlayGE
 
 		bool native_accepted = true;
 
-		for (int type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			ShaderDesc const & sd = effect.GetShaderDesc(shader_desc_ids_[type]);
+			ShaderDesc const & sd = effect.GetShaderDesc(shader_desc_ids_[stage]);
 			if (!sd.func_name.empty())
 			{
-				ShaderObject::ShaderType st = static_cast<ShaderObject::ShaderType>(type);
+				ShaderStage ss = static_cast<ShaderStage>(stage);
 
 				bool this_native_accepted;
-				if (sd.tech_pass_type != (tech_index << 16) + (pass_index << 8) + type)
+				if (sd.tech_pass_type != (tech_index << 16) + (pass_index << 8) + stage)
 				{
 					auto const & tech = *effect.TechniqueByIndex(sd.tech_pass_type >> 16);
 					auto const & pass = tech.Pass((sd.tech_pass_type >> 8) & 0xFF);
-					shader_obj->AttachShader(st, effect, tech, pass, pass.GetShaderObject(effect));
+					shader_obj->AttachShader(ss, effect, tech, pass, pass.GetShaderObject(effect));
 					this_native_accepted = true;
 				}
 				else
 				{
-					this_native_accepted = shader_obj->StreamIn(res, static_cast<ShaderObject::ShaderType>(type),
-						effect, shader_desc_ids_);
+					this_native_accepted = shader_obj->StreamIn(res, ss, effect, shader_desc_ids_);
 				}
 
 				native_accepted &= this_native_accepted;
@@ -4958,14 +4957,14 @@ namespace KlayGE
 			os.write(reinterpret_cast<char const *>(&tmp), sizeof(tmp));
 		}
 
-		for (int type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			ShaderDesc const & sd = effect.GetShaderDesc(shader_desc_ids_[type]);
+			ShaderDesc const & sd = effect.GetShaderDesc(shader_desc_ids_[stage]);
 			if (!sd.func_name.empty())
 			{
-				if (sd.tech_pass_type == (tech_index << 16) + (pass_index << 8) + type)
+				if (sd.tech_pass_type == (tech_index << 16) + (pass_index << 8) + stage)
 				{
-					this->GetShaderObject(effect)->StreamOut(os, static_cast<ShaderObject::ShaderType>(type));
+					this->GetShaderObject(effect)->StreamOut(os, static_cast<ShaderStage>(stage));
 				}
 			}
 		}
@@ -5343,7 +5342,7 @@ namespace KlayGE
 #if KLAYGE_IS_DEV_PLATFORM
 	void RenderShaderFragment::Load(XMLNodePtr const & node)
 	{
-		type_ = ShaderObject::ST_NumShaderTypes;
+		stage_ = ShaderStage::Num;
 		XMLAttributePtr attr = node->Attrib("type");
 		if (attr)
 		{
@@ -5351,28 +5350,28 @@ namespace KlayGE
 			size_t const type_str_hash = HashRange(type_str.begin(), type_str.end());
 			if (CT_HASH("vertex_shader") == type_str_hash)
 			{
-				type_ = ShaderObject::ST_VertexShader;
+				stage_ = ShaderStage::VertexShader;
 			}
 			else if (CT_HASH("pixel_shader") == type_str_hash)
 			{
-				type_ = ShaderObject::ST_PixelShader;
+				stage_ = ShaderStage::PixelShader;
 			}
 			else if (CT_HASH("geometry_shader") == type_str_hash)
 			{
-				type_ = ShaderObject::ST_GeometryShader;
+				stage_ = ShaderStage::GeometryShader;
 			}
 			else if (CT_HASH("compute_shader") == type_str_hash)
 			{
-				type_ = ShaderObject::ST_ComputeShader;
+				stage_ = ShaderStage::ComputeShader;
 			}
 			else if (CT_HASH("hull_shader") == type_str_hash)
 			{
-				type_ = ShaderObject::ST_HullShader;
+				stage_ = ShaderStage::HullShader;
 			}
 			else
 			{
 				BOOST_ASSERT(CT_HASH("domain_shader") == type_str_hash);
-				type_ = ShaderObject::ST_DomainShader;
+				stage_ = ShaderStage::DomainShader;
 			}
 		}
 		
@@ -5409,8 +5408,9 @@ namespace KlayGE
 
 	void RenderShaderFragment::StreamIn(ResIdentifierPtr const & res)
 	{
-		res->read(&type_, sizeof(type_));
-		type_ = LE2Native(type_);
+		uint32_t tmp;
+		res->read(&tmp, sizeof(tmp));
+		stage_ = static_cast<ShaderStage>(LE2Native(tmp));
 		res->read(&ver_, sizeof(ver_));
 
 		uint32_t len;
@@ -5424,7 +5424,7 @@ namespace KlayGE
 	void RenderShaderFragment::StreamOut(std::ostream& os) const
 	{
 		uint32_t tmp;
-		tmp = Native2LE(type_);
+		tmp = Native2LE(static_cast<uint32_t>(stage_));
 		os.write(reinterpret_cast<char const *>(&tmp), sizeof(tmp));
 		os.write(reinterpret_cast<char const *>(&ver_), sizeof(ver_));
 

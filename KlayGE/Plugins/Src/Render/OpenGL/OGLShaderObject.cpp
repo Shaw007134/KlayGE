@@ -269,7 +269,7 @@ namespace
 
 namespace KlayGE
 {
-	OGLShaderStageObject::OGLShaderStageObject(ShaderObject::ShaderType stage, GLenum gl_shader_type)
+	OGLShaderStageObject::OGLShaderStageObject(ShaderStage stage, GLenum gl_shader_type)
 		: ShaderStageObject(stage), gl_shader_type_(gl_shader_type)
 	{
 	}
@@ -283,9 +283,9 @@ namespace KlayGE
 	}
 
 	void OGLShaderStageObject::StreamIn(RenderEffect const& effect,
-		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
 	{
-		auto const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
+		auto const& sd = effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(stage_)]);
 
 		shader_func_name_ = sd.func_name;
 
@@ -413,19 +413,19 @@ namespace KlayGE
 	}
 
 	void OGLShaderStageObject::AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids)
 	{
-		ShaderDesc const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
+		ShaderDesc const& sd = effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(stage_)]);
 
 		shader_func_name_ = sd.func_name;
 
 		bool has_gs = false;
-		if (!effect.GetShaderDesc(shader_desc_ids[ShaderObject::ST_GeometryShader]).func_name.empty())
+		if (!effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(ShaderStage::GeometryShader)]).func_name.empty())
 		{
 			has_gs = true;
 		}
 		bool has_ps = false;
-		if (!effect.GetShaderDesc(shader_desc_ids[ShaderObject::ST_PixelShader]).func_name.empty())
+		if (!effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(ShaderStage::PixelShader)]).func_name.empty())
 		{
 			has_ps = true;
 		}
@@ -433,11 +433,11 @@ namespace KlayGE
 		is_validate_ = true;
 		switch (stage_)
 		{
-		case ShaderObject::ST_VertexShader:
-		case ShaderObject::ST_PixelShader:
-		case ShaderObject::ST_GeometryShader:
-		case ShaderObject::ST_HullShader:
-		case ShaderObject::ST_DomainShader:
+		case ShaderStage::VertexShader:
+		case ShaderStage::PixelShader:
+		case ShaderStage::GeometryShader:
+		case ShaderStage::HullShader:
+		case ShaderStage::DomainShader:
 			break;
 
 		default:
@@ -450,7 +450,7 @@ namespace KlayGE
 			auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 			auto const& caps = re.DeviceCaps();
 
-			std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[stage_]);
+			std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[static_cast<uint32_t>(stage_)]);
 			is_validate_ = !shader_profile.empty();
 
 			if (is_validate_)
@@ -585,7 +585,7 @@ namespace KlayGE
 	}
 
 	void OGLShaderStageObject::CreateHwShader(
-		RenderEffect const& effect, std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
+		RenderEffect const& effect, std::array<uint32_t, NumShaderStages> const& shader_desc_ids)
 	{
 		KFL_UNUSED(effect);
 		KFL_UNUSED(shader_desc_ids);
@@ -629,7 +629,7 @@ namespace KlayGE
 		{
 			if (shader_profile == "auto")
 			{
-				shader_profile = default_shader_profiles[stage_];
+				shader_profile = default_shader_profiles[static_cast<uint32_t>(stage_)];
 			}
 		}
 		else
@@ -641,7 +641,7 @@ namespace KlayGE
 	}
 
 
-	OGLVertexShaderStageObject::OGLVertexShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_VertexShader, GL_VERTEX_SHADER)
+	OGLVertexShaderStageObject::OGLVertexShaderStageObject() : OGLShaderStageObject(ShaderStage::VertexShader, GL_VERTEX_SHADER)
 	{
 		is_available_ = true;
 	}
@@ -783,13 +783,13 @@ namespace KlayGE
 	}
 
 
-	OGLPixelShaderStageObject::OGLPixelShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_PixelShader, GL_FRAGMENT_SHADER)
+	OGLPixelShaderStageObject::OGLPixelShaderStageObject() : OGLShaderStageObject(ShaderStage::PixelShader, GL_FRAGMENT_SHADER)
 	{
 		is_available_ = true;
 	}
 
 
-	OGLGeometryShaderStageObject::OGLGeometryShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_GeometryShader, GL_GEOMETRY_SHADER)
+	OGLGeometryShaderStageObject::OGLGeometryShaderStageObject() : OGLShaderStageObject(ShaderStage::GeometryShader, GL_GEOMETRY_SHADER)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -870,14 +870,14 @@ namespace KlayGE
 	}
 
 
-	OGLComputeShaderStageObject::OGLComputeShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_ComputeShader, GL_COMPUTE_SHADER)
+	OGLComputeShaderStageObject::OGLComputeShaderStageObject() : OGLShaderStageObject(ShaderStage::ComputeShader, GL_COMPUTE_SHADER)
 	{
 		is_available_ = false;
 		is_validate_ = false;
 	}
 
 
-	OGLHullShaderStageObject::OGLHullShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_HullShader, GL_TESS_CONTROL_SHADER)
+	OGLHullShaderStageObject::OGLHullShaderStageObject() : OGLShaderStageObject(ShaderStage::HullShader, GL_TESS_CONTROL_SHADER)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -891,7 +891,7 @@ namespace KlayGE
 	}
 
 
-	OGLDomainShaderStageObject::OGLDomainShaderStageObject() : OGLShaderStageObject(ShaderObject::ST_DomainShader, GL_TESS_EVALUATION_SHADER)
+	OGLDomainShaderStageObject::OGLDomainShaderStageObject() : OGLShaderStageObject(ShaderStage::DomainShader, GL_TESS_EVALUATION_SHADER)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -921,33 +921,33 @@ namespace KlayGE
 		glDeleteProgram(glsl_program_);
 	}
 
-	bool OGLShaderObject::AttachNativeShader(ShaderType type, RenderEffect const& effect,
-		std::array<uint32_t, ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
+	bool OGLShaderObject::AttachNativeShader(ShaderStage stage, RenderEffect const& effect,
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
 	{
 		auto& rf = Context::Instance().RenderFactoryInstance();
-		auto shader_stage = rf.MakeShaderStageObject(type);
+		auto shader_stage = rf.MakeShaderStageObject(stage);
 
-		so_template_->shader_stages_[type] = shader_stage;
+		this->AttachStage(stage, shader_stage);
 		shader_stage->StreamIn(effect, shader_desc_ids, native_shader_block);
 		if (shader_stage->Validate())
 		{
-			this->AppendTexSamplerBinds(type, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
-			this->FillTFBVaryings(effect.GetShaderDesc(shader_desc_ids[type]));
+			this->AppendTexSamplerBinds(stage, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
+			this->FillTFBVaryings(effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(stage)]));
 		}
 
 		return shader_stage->Validate();
 	}
 
-	void OGLShaderObject::AttachShader(ShaderType type, RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-		std::array<uint32_t, ST_NumShaderTypes> const& shader_desc_ids)
+	void OGLShaderObject::AttachShader(ShaderStage stage, RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids)
 	{
 		auto& rf = Context::Instance().RenderFactoryInstance();
-		auto shader_stage = rf.MakeShaderStageObject(type);
+		auto shader_stage = rf.MakeShaderStageObject(stage);
 
-		so_template_->shader_stages_[type] = shader_stage;
-		if (type == ST_DomainShader)
+		this->AttachStage(stage, shader_stage);
+		if (stage == ShaderStage::DomainShader)
 		{
-			auto* hull_shader_stage = checked_cast<OGLHullShaderStageObject*>(so_template_->shader_stages_[ST_HullShader].get());
+			auto* hull_shader_stage = checked_cast<OGLHullShaderStageObject*>(this->Stage(ShaderStage::HullShader).get());
 			checked_cast<OGLDomainShaderStageObject*>(shader_stage.get())
 				->DsParameters(hull_shader_stage->DsPartitioning(), hull_shader_stage->DsOutputPrimitive());
 		}
@@ -955,29 +955,28 @@ namespace KlayGE
 
 		if (shader_stage->Validate())
 		{
-			this->AppendTexSamplerBinds(type, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
-			this->FillTFBVaryings(effect.GetShaderDesc(shader_desc_ids[type]));
+			this->AppendTexSamplerBinds(stage, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
+			this->FillTFBVaryings(effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(stage)]));
 		}
 	}
 
-	void OGLShaderObject::AttachShader(ShaderType type, RenderEffect const& effect, RenderTechnique const& /*tech*/,
+	void OGLShaderObject::AttachShader(ShaderStage stage, RenderEffect const& effect, RenderTechnique const& /*tech*/,
 		RenderPass const& /*pass*/, ShaderObjectPtr const& shared_so)
 	{
 		auto so = checked_cast<OGLShaderObject*>(shared_so.get());
 
-		so_template_->shader_stages_[type] = so->so_template_->shader_stages_[type];
-
-		if (so_template_->shader_stages_[type]->Validate())
+		this->AttachStage(stage, so->Stage(stage));
+		if (this->Stage(stage)->Validate())
 		{
-			switch (type)
+			switch (stage)
 			{
-			case ST_VertexShader:
-			case ST_GeometryShader:
-			case ST_DomainShader:
+			case ShaderStage::VertexShader:
+			case ShaderStage::GeometryShader:
+			case ShaderStage::DomainShader:
 				gl_so_template_->glsl_tfb_varyings_ = so->gl_so_template_->glsl_tfb_varyings_;
 				break;
 			
-			case ST_PixelShader:
+			case ShaderStage::PixelShader:
 				has_discard_ = so->has_discard_;
 				break;
 
@@ -986,16 +985,16 @@ namespace KlayGE
 			}
 
 			this->AppendTexSamplerBinds(
-				type, effect, checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get())->TexSamplerPairs());
+				stage, effect, checked_cast<OGLShaderStageObject*>(this->Stage(stage).get())->TexSamplerPairs());
 		}
 	}
 
 	void OGLShaderObject::LinkShaders(RenderEffect const & effect)
 	{
 		is_validate_ = true;
-		for (size_t type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			auto const& shader_stage = so_template_->shader_stages_[type];
+			auto const& shader_stage = this->Stage(static_cast<ShaderStage>(stage));
 			if (shader_stage)
 			{
 				is_validate_ &= shader_stage->Validate();
@@ -1023,9 +1022,9 @@ namespace KlayGE
 				}
 			}
 
-			for (int type = 0; type < ST_NumShaderTypes; ++ type)
+			for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 			{
-				auto const* shader_stage = checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get());
+				auto const* shader_stage = checked_cast<OGLShaderStageObject*>(this->Stage(static_cast<ShaderStage>(stage)).get());
 				if (shader_stage)
 				{
 					for (size_t pi = 0; pi < shader_stage->PNames().size(); ++pi)
@@ -1088,7 +1087,7 @@ namespace KlayGE
 
 			{
 				auto const* vs_shader_stage =
-					checked_cast<OGLVertexShaderStageObject const*>(so_template_->shader_stages_[ST_VertexShader].get());
+					checked_cast<OGLVertexShaderStageObject const*>(this->Stage(ShaderStage::VertexShader).get());
 				for (size_t pi = 0; pi < vs_shader_stage->GlslAttribNames().size(); ++pi)
 				{
 					attrib_locs_.emplace(std::make_pair(vs_shader_stage->Usages()[pi], vs_shader_stage->UsageIndices()[pi]),
@@ -1219,9 +1218,9 @@ namespace KlayGE
 	}
 
 	void OGLShaderObject::AppendTexSamplerBinds(
-		ShaderType stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs)
+		ShaderStage stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs)
 	{
-		uint32_t const mask = 1UL << stage;
+		uint32_t const mask = 1UL << static_cast<uint32_t>(stage);
 		for (auto const& tex_sampler : tex_sampler_pairs)
 		{
 			std::string const combined_sampler_name = tex_sampler.first + "_" + tex_sampler.second;
@@ -1246,9 +1245,9 @@ namespace KlayGE
 
 	void OGLShaderObject::LinkGLSL()
 	{
-		for (size_t type = 0; type < ST_NumShaderTypes; ++type)
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			auto const* shader_stage = checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get());
+			auto const* shader_stage = checked_cast<OGLShaderStageObject*>(this->Stage(static_cast<ShaderStage>(stage)).get());
 			if (shader_stage)
 			{
 				BOOST_ASSERT(shader_stage->GlShader() != 0);
@@ -1276,10 +1275,10 @@ namespace KlayGE
 		if (!linked)
 		{
 			std::string shader_names;
-			for (size_t type = 0; type < ShaderObject::ST_NumShaderTypes; ++ type)
+			for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 			{
 				std::string const& func_name =
-					checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get())->ShaderFuncName();
+					checked_cast<OGLShaderStageObject*>(this->Stage(static_cast<ShaderStage>(stage)).get())->ShaderFuncName();
 				if (!func_name.empty())
 				{
 					shader_names += func_name + '/';
@@ -1307,38 +1306,38 @@ namespace KlayGE
 					std::string type1, type2;
 					err_iss >> type1 >> type2;
 
-					ShaderType shader_type;
+					ShaderStage stage;
 					if ("Vertex" == type1)
 					{
-						shader_type = ST_VertexShader;
+						stage = ShaderStage::VertexShader;
 					}
 					else if ("Geometry" == type1)
 					{
-						shader_type = ST_GeometryShader;
+						stage = ShaderStage::GeometryShader;
 					}
 					else if ("Fragment" == type1)
 					{
-						shader_type = ST_PixelShader;
+						stage = ShaderStage::PixelShader;
 					}
 					else if ("Tessellation" == type1)
 					{
 						if ("control" == type2)
 						{
-							shader_type = ST_HullShader;
+							stage = ShaderStage::HullShader;
 						}
 						else
 						{
-							shader_type = ST_DomainShader;
+							stage = ShaderStage::DomainShader;
 						}
 					}
 					else
 					{
-						shader_type = ST_NumShaderTypes;
+						stage = ShaderStage::Num;
 					}
 
-					if (shader_type != ST_NumShaderTypes)
+					if (stage != ShaderStage::Num)
 					{
-						PrintGlslError(checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[shader_type].get())->GlslSource(),
+						PrintGlslError(checked_cast<OGLShaderStageObject*>(this->Stage(stage).get())->GlslSource(),
 							std::string_view(info.data(), info.size()));
 					}
 					else
@@ -1507,8 +1506,8 @@ namespace KlayGE
 
 	void OGLShaderObject::Bind()
 	{
-		if (!so_template_->shader_stages_[ShaderObject::ST_PixelShader] ||
-			checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_PixelShader].get())->GlslSource().empty())
+		if (!this->Stage(ShaderStage::PixelShader) ||
+			checked_cast<OGLShaderStageObject*>(this->Stage(ShaderStage::PixelShader).get())->GlslSource().empty())
 		{
 			glEnable(GL_RASTERIZER_DISCARD);
 		}
@@ -1562,8 +1561,8 @@ namespace KlayGE
 
 	void OGLShaderObject::Unbind()
 	{
-		if (!so_template_->shader_stages_[ShaderObject::ST_PixelShader] ||
-			checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[ShaderObject::ST_PixelShader].get())->GlslSource().empty())
+		if (!this->Stage(ShaderStage::PixelShader) ||
+			checked_cast<OGLShaderStageObject*>(this->Stage(ShaderStage::PixelShader).get())->GlslSource().empty())
 		{
 			glDisable(GL_RASTERIZER_DISCARD);
 		}

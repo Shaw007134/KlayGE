@@ -101,21 +101,21 @@ namespace KlayGE
 
 			if (native_shader_platform_name_.find("d3d_11") == 0)
 			{
-				shader_profiles_[ShaderObject::ST_VertexShader] = "vs_5_0";
-				shader_profiles_[ShaderObject::ST_PixelShader] = "ps_5_0";
-				shader_profiles_[ShaderObject::ST_GeometryShader] = "gs_5_0";
-				shader_profiles_[ShaderObject::ST_ComputeShader] = "cs_5_0";
-				shader_profiles_[ShaderObject::ST_HullShader] = "hs_5_0";
-				shader_profiles_[ShaderObject::ST_DomainShader] = "ds_5_0";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::VertexShader)] = "vs_5_0";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::PixelShader)] = "ps_5_0";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::GeometryShader)] = "gs_5_0";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::ComputeShader)] = "cs_5_0";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::HullShader)] = "hs_5_0";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::DomainShader)] = "ds_5_0";
 			}
 			else if (native_shader_platform_name_.find("d3d_12") == 0)
 			{
-				shader_profiles_[ShaderObject::ST_VertexShader] = "vs_5_1";
-				shader_profiles_[ShaderObject::ST_PixelShader] = "ps_5_1";
-				shader_profiles_[ShaderObject::ST_GeometryShader] = "gs_5_1";
-				shader_profiles_[ShaderObject::ST_ComputeShader] = "cs_5_1";
-				shader_profiles_[ShaderObject::ST_HullShader] = "hs_5_1";
-				shader_profiles_[ShaderObject::ST_DomainShader] = "ds_5_1";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::VertexShader)] = "vs_5_1";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::PixelShader)] = "ps_5_1";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::GeometryShader)] = "gs_5_1";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::ComputeShader)] = "cs_5_1";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::HullShader)] = "hs_5_1";
+				shader_profiles_[static_cast<uint32_t>(ShaderStage::DomainShader)] = "ds_5_1";
 			}
 			else
 			{

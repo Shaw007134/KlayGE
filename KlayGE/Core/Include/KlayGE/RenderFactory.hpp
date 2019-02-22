@@ -178,7 +178,7 @@ namespace KlayGE
 			BlendStateDesc const & bs_desc);
 		SamplerStateObjectPtr MakeSamplerStateObject(SamplerStateDesc const & desc);
 		virtual ShaderObjectPtr MakeShaderObject() = 0;
-		virtual ShaderStageObjectPtr MakeShaderStageObject(ShaderObject::ShaderType stage) = 0;
+		virtual ShaderStageObjectPtr MakeShaderStageObject(ShaderStage stage) = 0;
 
 	private:
 		virtual std::unique_ptr<RenderEngine> DoMakeRenderEngine() = 0;

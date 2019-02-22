@@ -69,9 +69,9 @@ namespace KlayGE
 		bool FullScreen() const override;
 		void FullScreen(bool fs) override;
 
-		char const* DefaultShaderProfile(ShaderObject::ShaderType stage) const
+		char const* DefaultShaderProfile(ShaderStage stage) const
 		{
-			return shader_profiles_[stage];
+			return shader_profiles_[static_cast<uint32_t>(stage)];
 		}
 
 	private:
@@ -94,7 +94,7 @@ namespace KlayGE
 		bool requires_flipping_;
 		bool frag_depth_support_;
 
-		char const* shader_profiles_[ShaderObject::ST_NumShaderTypes];
+		char const* shader_profiles_[NumShaderStages];
 	};
 }
 

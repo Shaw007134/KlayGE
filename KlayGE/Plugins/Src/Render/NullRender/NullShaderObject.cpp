@@ -79,16 +79,16 @@ namespace
 
 namespace KlayGE
 {
-	D3DShaderStageObject::D3DShaderStageObject(ShaderObject::ShaderType stage, bool as_d3d12)
+	D3DShaderStageObject::D3DShaderStageObject(ShaderStage stage, bool as_d3d12)
 		: ShaderStageObject(stage), as_d3d12_(as_d3d12)
 	{
 	}
 
 	void D3DShaderStageObject::StreamIn(RenderEffect const& effect,
-		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
 	{
 		is_validate_ = false;
-		std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[stage_]);
+		std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[static_cast<uint32_t>(stage_)]);
 		if (native_shader_block.size() >= 25 + shader_profile.size())
 		{
 			MemInputStreamBuf native_shader_buff(native_shader_block.data(), native_shader_block.size());
@@ -272,14 +272,16 @@ namespace KlayGE
 	}
 
 	void D3DShaderStageObject::AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids)
 	{
 		shader_code_.clear();
 
 #ifdef KLAYGE_PLATFORM_WINDOWS_DESKTOP
-		auto const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
+		uint32_t const shader_desc_id = shader_desc_ids[static_cast<uint32_t>(stage_)];
 
-		shader_profile_ = std::string(this->GetShaderProfile(effect, shader_desc_ids[stage_]));
+		auto const& sd = effect.GetShaderDesc(shader_desc_id);
+
+		shader_profile_ = std::string(this->GetShaderProfile(effect, shader_desc_id));
 		is_validate_ = !shader_profile_.empty();
 
 		if (is_validate_)
@@ -483,7 +485,7 @@ namespace KlayGE
 	}
 
 
-	D3D11VertexShaderStageObject::D3D11VertexShaderStageObject() : D3DShaderStageObject(ShaderObject::ST_VertexShader, false)
+	D3D11VertexShaderStageObject::D3D11VertexShaderStageObject() : D3DShaderStageObject(ShaderStage::VertexShader, false)
 	{
 		is_available_ = true;
 	}
@@ -530,20 +532,20 @@ namespace KlayGE
 #endif
 
 
-	D3D12VertexShaderStageObject::D3D12VertexShaderStageObject() : D3DShaderStageObject(ShaderObject::ST_VertexShader, true)
+	D3D12VertexShaderStageObject::D3D12VertexShaderStageObject() : D3DShaderStageObject(ShaderStage::VertexShader, true)
 	{
 		is_available_ = true;
 	}
 
 
-	D3DPixelShaderStageObject::D3DPixelShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderObject::ST_PixelShader, as_d3d12)
+	D3DPixelShaderStageObject::D3DPixelShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderStage::PixelShader, as_d3d12)
 	{
 		is_available_ = true;
 	}
 
 
 	D3DGeometryShaderStageObject::D3DGeometryShaderStageObject(bool as_d3d12)
-		: D3DShaderStageObject(ShaderObject::ST_GeometryShader, as_d3d12)
+		: D3DShaderStageObject(ShaderStage::GeometryShader, as_d3d12)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -551,7 +553,7 @@ namespace KlayGE
 	}
 
 
-	D3DComputeShaderStageObject::D3DComputeShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderObject::ST_ComputeShader, as_d3d12)
+	D3DComputeShaderStageObject::D3DComputeShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderStage::ComputeShader, as_d3d12)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -590,7 +592,7 @@ namespace KlayGE
 #endif
 
 
-	D3DHullShaderStageObject::D3DHullShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderObject::ST_HullShader, as_d3d12)
+	D3DHullShaderStageObject::D3DHullShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderStage::HullShader, as_d3d12)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -598,7 +600,7 @@ namespace KlayGE
 	}
 
 
-	D3DDomainShaderStageObject::D3DDomainShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderObject::ST_DomainShader, as_d3d12)
+	D3DDomainShaderStageObject::D3DDomainShaderStageObject(bool as_d3d12) : D3DShaderStageObject(ShaderStage::DomainShader, as_d3d12)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -606,15 +608,15 @@ namespace KlayGE
 	}
 
 
-	OGLShaderStageObject::OGLShaderStageObject(ShaderObject::ShaderType stage, GLenum gl_shader_type, bool as_gles)
+	OGLShaderStageObject::OGLShaderStageObject(ShaderStage stage, GLenum gl_shader_type, bool as_gles)
 		: ShaderStageObject(stage), gl_shader_type_(gl_shader_type), as_gles_(as_gles)
 	{
 	}
 
 	void OGLShaderStageObject::StreamIn(RenderEffect const& effect,
-		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids, std::vector<uint8_t> const& native_shader_block)
 	{
-		auto const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
+		auto const& sd = effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(stage_)]);
 
 		shader_func_name_ = sd.func_name;
 
@@ -740,19 +742,19 @@ namespace KlayGE
 	}
 
 	void OGLShaderStageObject::AttachShader(RenderEffect const& effect, RenderTechnique const& tech, RenderPass const& pass,
-		std::array<uint32_t, ShaderObject::ST_NumShaderTypes> const& shader_desc_ids)
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids)
 	{
-		ShaderDesc const& sd = effect.GetShaderDesc(shader_desc_ids[stage_]);
+		ShaderDesc const& sd = effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(stage_)]);
 
 		shader_func_name_ = sd.func_name;
 
 		bool has_gs = false;
-		if (!effect.GetShaderDesc(shader_desc_ids[ShaderObject::ST_GeometryShader]).func_name.empty())
+		if (!effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(ShaderStage::GeometryShader)]).func_name.empty())
 		{
 			has_gs = true;
 		}
 		bool has_ps = false;
-		if (!effect.GetShaderDesc(shader_desc_ids[ShaderObject::ST_PixelShader]).func_name.empty())
+		if (!effect.GetShaderDesc(shader_desc_ids[static_cast<uint32_t>(ShaderStage::PixelShader)]).func_name.empty())
 		{
 			has_ps = true;
 		}
@@ -760,13 +762,13 @@ namespace KlayGE
 		is_validate_ = true;
 		switch (stage_)
 		{
-		case ShaderObject::ST_VertexShader:
-		case ShaderObject::ST_PixelShader:
-		case ShaderObject::ST_HullShader:
-		case ShaderObject::ST_DomainShader:
+		case ShaderStage::VertexShader:
+		case ShaderStage::PixelShader:
+		case ShaderStage::HullShader:
+		case ShaderStage::DomainShader:
 			break;
 
-		case ShaderObject::ST_GeometryShader:
+		case ShaderStage::GeometryShader:
 			if (as_gles_)
 			{
 				is_validate_ = false;
@@ -783,7 +785,7 @@ namespace KlayGE
 			auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 			auto const& caps = re.DeviceCaps();
 
-			std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[stage_]);
+			std::string_view const shader_profile = this->GetShaderProfile(effect, shader_desc_ids[static_cast<uint32_t>(stage_)]);
 			is_validate_ = !shader_profile.empty();
 
 			if (is_validate_)
@@ -913,7 +915,7 @@ namespace KlayGE
 							rules &= ~GSR_MatrixType;
 							rules &= ~GSR_UIntType;
 							rules |= caps.max_simultaneous_rts > 1 ? static_cast<uint32_t>(GSR_DrawBuffers) : 0;
-							if ((ShaderObject::ST_HullShader == stage_) || (ShaderObject::ST_DomainShader == stage_))
+							if ((ShaderStage::HullShader == stage_) || (ShaderStage::DomainShader == stage_))
 							{
 								rules |= static_cast<uint32_t>(GSR_EXTTessellationShader);
 							}
@@ -998,7 +1000,7 @@ namespace KlayGE
 		{
 			if (shader_profile == "auto")
 			{
-				shader_profile = gl_default_shader_profiles[stage_];
+				shader_profile = gl_default_shader_profiles[static_cast<uint32_t>(stage_)];
 			}
 		}
 		else
@@ -1011,7 +1013,7 @@ namespace KlayGE
 
 
 	OGLVertexShaderStageObject::OGLVertexShaderStageObject(bool as_gles)
-		: OGLShaderStageObject(ShaderObject::ST_VertexShader, GL_VERTEX_SHADER, as_gles)
+		: OGLShaderStageObject(ShaderStage::VertexShader, GL_VERTEX_SHADER, as_gles)
 	{
 		is_available_ = true;
 	}
@@ -1154,14 +1156,14 @@ namespace KlayGE
 
 
 	OGLPixelShaderStageObject::OGLPixelShaderStageObject(bool as_gles)
-		: OGLShaderStageObject(ShaderObject::ST_PixelShader, GL_FRAGMENT_SHADER, as_gles)
+		: OGLShaderStageObject(ShaderStage::PixelShader, GL_FRAGMENT_SHADER, as_gles)
 	{
 		is_available_ = true;
 	}
 
 
 	OGLGeometryShaderStageObject::OGLGeometryShaderStageObject()
-		: OGLShaderStageObject(ShaderObject::ST_GeometryShader, GL_GEOMETRY_SHADER, false)
+		: OGLShaderStageObject(ShaderStage::GeometryShader, GL_GEOMETRY_SHADER, false)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -1243,7 +1245,7 @@ namespace KlayGE
 
 
 	OGLESGeometryShaderStageObject::OGLESGeometryShaderStageObject()
-		: OGLShaderStageObject(ShaderObject::ST_GeometryShader, GL_GEOMETRY_SHADER, true)
+		: OGLShaderStageObject(ShaderStage::GeometryShader, GL_GEOMETRY_SHADER, true)
 	{
 		is_available_ = false;
 		is_validate_ = false;
@@ -1251,7 +1253,7 @@ namespace KlayGE
 
 
 	OGLComputeShaderStageObject::OGLComputeShaderStageObject(bool as_gles)
-		: OGLShaderStageObject(ShaderObject::ST_ComputeShader, GL_COMPUTE_SHADER, as_gles)
+		: OGLShaderStageObject(ShaderStage::ComputeShader, GL_COMPUTE_SHADER, as_gles)
 	{
 		is_available_ = false;
 		is_validate_ = false;
@@ -1259,7 +1261,7 @@ namespace KlayGE
 
 
 	OGLHullShaderStageObject::OGLHullShaderStageObject(bool as_gles)
-		: OGLShaderStageObject(ShaderObject::ST_HullShader, GL_TESS_CONTROL_SHADER, as_gles)
+		: OGLShaderStageObject(ShaderStage::HullShader, GL_TESS_CONTROL_SHADER, as_gles)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -1274,7 +1276,7 @@ namespace KlayGE
 
 
 	OGLDomainShaderStageObject::OGLDomainShaderStageObject(bool as_gles)
-		: OGLShaderStageObject(ShaderObject::ST_DomainShader, GL_TESS_EVALUATION_SHADER, as_gles)
+		: OGLShaderStageObject(ShaderStage::DomainShader, GL_TESS_EVALUATION_SHADER, as_gles)
 	{
 		auto const& re = Context::Instance().RenderFactoryInstance().RenderEngineInstance();
 		auto const& caps = re.DeviceCaps();
@@ -1320,51 +1322,54 @@ namespace KlayGE
 		has_discard_ = true;
 	}
 
-	bool NullShaderObject::AttachNativeShader(ShaderType type, RenderEffect const & effect,
-		std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block)
+	bool NullShaderObject::AttachNativeShader(ShaderStage stage, RenderEffect const & effect,
+		std::array<uint32_t, NumShaderStages> const & shader_desc_ids, std::vector<uint8_t> const & native_shader_block)
 	{
-		KFL_UNUSED(type);
+		KFL_UNUSED(stage);
 		KFL_UNUSED(effect);
 		KFL_UNUSED(shader_desc_ids);
 		KFL_UNUSED(native_shader_block);
 		return true;
 	}
 
-	void NullShaderObject::AttachShader(ShaderType type, RenderEffect const & effect,
-		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
+	void NullShaderObject::AttachShader(ShaderStage stage, RenderEffect const & effect,
+		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, NumShaderStages> const & shader_desc_ids)
 	{
 		if (null_so_template_->as_d3d11_ || null_so_template_->as_d3d12_)
 		{
-			this->D3D11AttachShader(type, effect, tech, pass, shader_desc_ids);
+			this->D3D11AttachShader(stage, effect, tech, pass, shader_desc_ids);
 		}
 		else if (null_so_template_->as_gl_ || null_so_template_->as_gles_)
 		{
-			this->OGLAttachShader(type, effect, tech, pass, shader_desc_ids);
+			this->OGLAttachShader(stage, effect, tech, pass, shader_desc_ids);
 		}
 	}
 
-	void NullShaderObject::AttachShader(ShaderType type, RenderEffect const & effect,
+	void NullShaderObject::AttachShader(ShaderStage stage, RenderEffect const & effect,
 		RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so)
 	{
 		if (null_so_template_->as_d3d11_ || null_so_template_->as_d3d12_)
 		{
-			this->D3D11AttachShader(type, effect, tech, pass, shared_so);
+			this->D3D11AttachShader(stage, effect, tech, pass, shared_so);
 		}
 		else if (null_so_template_->as_gl_ || null_so_template_->as_gles_)
 		{
-			this->OGLAttachShader(type, effect, tech, pass, shared_so);
+			this->OGLAttachShader(stage, effect, tech, pass, shared_so);
 		}
 	}
 
 	void NullShaderObject::LinkShaders(RenderEffect const & effect)
 	{
-		if (null_so_template_->as_d3d11_ || null_so_template_->as_d3d12_)
+		KFL_UNUSED(effect);
+
+		is_validate_ = true;
+		for (uint32_t stage = 0; stage < NumShaderStages; ++stage)
 		{
-			this->D3D11LinkShaders(effect);
-		}
-		else if (null_so_template_->as_gl_ || null_so_template_->as_gles_)
-		{
-			this->OGLLinkShaders(effect);
+			auto const* shader_stage = this->Stage(static_cast<ShaderStage>(stage)).get();
+			if (shader_stage)
+			{
+				is_validate_ &= shader_stage->Validate();
+			}
 		}
 	}
 
@@ -1384,20 +1389,20 @@ namespace KlayGE
 
 	// D3D11/D3D12
 
-	void NullShaderObject::D3D11AttachShader(ShaderType type, RenderEffect const & effect,
-		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
+	void NullShaderObject::D3D11AttachShader(ShaderStage stage, RenderEffect const & effect,
+		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, NumShaderStages> const & shader_desc_ids)
 	{
 		// D3D11ShaderObject::AttachShader
 		// D3D12ShaderObject::AttachShader
 
 		auto& rf = Context::Instance().RenderFactoryInstance();
-		auto shader_stage = rf.MakeShaderStageObject(type);
+		auto shader_stage = rf.MakeShaderStageObject(stage);
 
-		so_template_->shader_stages_[type] = shader_stage;
+		this->AttachStage(stage, shader_stage);
 		shader_stage->AttachShader(effect, tech, pass, shader_desc_ids);
 	}
 
-	void NullShaderObject::D3D11AttachShader(ShaderType type, RenderEffect const & effect,
+	void NullShaderObject::D3D11AttachShader(ShaderStage stage, RenderEffect const & effect,
 		RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so)
 	{
 		// Simplified D3D11ShaderObject::AttachShader
@@ -1410,43 +1415,26 @@ namespace KlayGE
 		if (shared_so)
 		{
 			NullShaderObject const & so = *checked_cast<NullShaderObject*>(shared_so.get());
-			so_template_->shader_stages_[type] = so.so_template_->shader_stages_[type];
-		}
-	}
-
-	void NullShaderObject::D3D11LinkShaders(RenderEffect const & effect)
-	{
-		KFL_UNUSED(effect);
-
-		// Simplified D3D11ShaderObject::LinkShaders
-		// Simplified D3D12ShaderObject::LinkShaders
-
-		is_validate_ = true;
-		for (size_t type = 0; type < ST_NumShaderTypes; ++type)
-		{
-			if (so_template_->shader_stages_[type])
-			{
-				is_validate_ &= so_template_->shader_stages_[type]->Validate();
-			}
+			this->AttachStage(stage, so.Stage(stage));
 		}
 	}
 
 	// OpenGL/OpenGLES
 
-	void NullShaderObject::OGLAttachShader(ShaderType type, RenderEffect const & effect,
-		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, ST_NumShaderTypes> const & shader_desc_ids)
+	void NullShaderObject::OGLAttachShader(ShaderStage stage, RenderEffect const & effect,
+		RenderTechnique const & tech, RenderPass const & pass, std::array<uint32_t, NumShaderStages> const & shader_desc_ids)
 	{
 		// OGLShaderObject::AttachShader
 		// OGLESShaderObject::AttachShader
 
 #ifndef KLAYGE_PLATFORM_WINDOWS_STORE
 		auto& rf = Context::Instance().RenderFactoryInstance();
-		auto shader_stage = rf.MakeShaderStageObject(type);
+		auto shader_stage = rf.MakeShaderStageObject(stage);
 
-		so_template_->shader_stages_[type] = shader_stage;
-		if (type == ST_DomainShader)
+		this->AttachStage(stage, shader_stage);
+		if (stage == ShaderStage::DomainShader)
 		{
-			auto* hull_shader_stage = checked_cast<OGLHullShaderStageObject*>(so_template_->shader_stages_[ST_HullShader].get());
+			auto* hull_shader_stage = checked_cast<OGLHullShaderStageObject*>(this->Stage(ShaderStage::HullShader).get());
 			checked_cast<OGLDomainShaderStageObject*>(shader_stage.get())
 				->DsParameters(hull_shader_stage->DsPartitioning(), hull_shader_stage->DsOutputPrimitive());
 		}
@@ -1454,10 +1442,10 @@ namespace KlayGE
 
 		if (shader_stage->Validate())
 		{
-			this->OGLAppendTexSamplerBinds(type, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
+			this->OGLAppendTexSamplerBinds(stage, effect, checked_cast<OGLShaderStageObject*>(shader_stage.get())->TexSamplerPairs());
 		}
 #else
-		KFL_UNUSED(type);
+		KFL_UNUSED(stage);
 		KFL_UNUSED(effect);
 		KFL_UNUSED(tech);
 		KFL_UNUSED(pass);
@@ -1465,7 +1453,7 @@ namespace KlayGE
 #endif
 	}
 
-	void NullShaderObject::OGLAttachShader(ShaderType type, RenderEffect const & effect,
+	void NullShaderObject::OGLAttachShader(ShaderStage stage, RenderEffect const & effect,
 		RenderTechnique const & tech, RenderPass const & pass, ShaderObjectPtr const & shared_so)
 	{
 		// Simplified OGLShaderObject::AttachShader
@@ -1478,17 +1466,17 @@ namespace KlayGE
 #ifndef KLAYGE_PLATFORM_WINDOWS_STORE
 		auto* so = checked_cast<NullShaderObject*>(shared_so.get());
 
-		so_template_->shader_stages_[type] = so->so_template_->shader_stages_[type];
-		if (so_template_->shader_stages_[type] && so_template_->shader_stages_[type]->Validate())
+		this->AttachStage(stage, so->Stage(stage));
+		if (this->Stage(stage) && this->Stage(stage)->Validate())
 		{
-			switch (type)
+			switch (stage)
 			{
-			case ST_VertexShader:
-			case ST_GeometryShader:
-			case ST_DomainShader:
+			case ShaderStage::VertexShader:
+			case ShaderStage::GeometryShader:
+			case ShaderStage::DomainShader:
 				break;
 
-			case ST_PixelShader:
+			case ShaderStage::PixelShader:
 				has_discard_ = so->has_discard_;
 				break;
 
@@ -1497,7 +1485,7 @@ namespace KlayGE
 			}
 
 			this->OGLAppendTexSamplerBinds(
-				type, effect, checked_cast<OGLShaderStageObject*>(so_template_->shader_stages_[type].get())->TexSamplerPairs());
+				stage, effect, checked_cast<OGLShaderStageObject*>(this->Stage(stage).get())->TexSamplerPairs());
 		}
 #else
 		KFL_UNUSED(type);
@@ -1505,30 +1493,10 @@ namespace KlayGE
 #endif
 	}
 
-	void NullShaderObject::OGLLinkShaders(RenderEffect const & effect)
-	{
-		// Simplified OGLShaderObject::LinkShaders
-		// Simplified OGLESShaderObject::LinkShaders
-
-		KFL_UNUSED(effect);
-
-#ifndef KLAYGE_PLATFORM_WINDOWS_STORE
-		is_validate_ = true;
-		for (size_t type = 0; type < ShaderObject::ST_NumShaderTypes; ++type)
-		{
-			auto const& shader_stage = so_template_->shader_stages_[type];
-			if (shader_stage)
-			{
-				is_validate_ &= shader_stage->Validate();
-			}
-		}
-#endif
-	}
-
 	void NullShaderObject::OGLAppendTexSamplerBinds(
-		ShaderType stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs)
+		ShaderStage stage, RenderEffect const& effect, std::vector<std::pair<std::string, std::string>> const& tex_sampler_pairs)
 	{
-		uint32_t const mask = 1UL << stage;
+		uint32_t const mask = 1UL << static_cast<uint32_t>(stage);
 		for (auto const& tex_sampler : tex_sampler_pairs)
 		{
 			std::string const combined_sampler_name = tex_sampler.first + "_" + tex_sampler.second;

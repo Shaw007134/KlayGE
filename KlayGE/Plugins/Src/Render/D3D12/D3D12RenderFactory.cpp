@@ -276,32 +276,32 @@ namespace KlayGE
 		return MakeSharedPtr<D3D12ShaderObject>();
 	}
 
-	ShaderStageObjectPtr D3D12RenderFactory::MakeShaderStageObject(ShaderObject::ShaderType stage)
+	ShaderStageObjectPtr D3D12RenderFactory::MakeShaderStageObject(ShaderStage stage)
 	{
 		ShaderStageObjectPtr ret;
 		switch (stage)
 		{
-		case ShaderObject::ST_VertexShader:
+		case ShaderStage::VertexShader:
 			ret = MakeSharedPtr<D3D12VertexShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_PixelShader:
+		case ShaderStage::PixelShader:
 			ret = MakeSharedPtr<D3D12PixelShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_GeometryShader:
+		case ShaderStage::GeometryShader:
 			ret = MakeSharedPtr<D3D12GeometryShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_ComputeShader:
+		case ShaderStage::ComputeShader:
 			ret = MakeSharedPtr<D3D12ComputeShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_HullShader:
+		case ShaderStage::HullShader:
 			ret = MakeSharedPtr<D3D12HullShaderStageObject>();
 			break;
 
-		case ShaderObject::ST_DomainShader:
+		case ShaderStage::DomainShader:
 			ret = MakeSharedPtr<D3D12DomainShaderStageObject>();
 			break;
 

@@ -299,7 +299,7 @@ namespace
 
 namespace KlayGE
 {
-	ShaderStageObject::ShaderStageObject(ShaderObject::ShaderType stage)
+	ShaderStageObject::ShaderStageObject(ShaderStage stage)
 		: stage_(stage)
 	{
 	}
@@ -317,8 +317,8 @@ namespace KlayGE
 
 	ShaderObject::~ShaderObject() = default;
 	
-	bool ShaderObject::StreamIn(ResIdentifierPtr const& res, ShaderType type, RenderEffect const& effect,
-		std::array<uint32_t, ST_NumShaderTypes> const& shader_desc_ids)
+	bool ShaderObject::StreamIn(ResIdentifierPtr const& res, ShaderStage stage, RenderEffect const& effect,
+		std::array<uint32_t, NumShaderStages> const& shader_desc_ids)
 	{
 		uint32_t len;
 		res->read(&len, sizeof(len));
@@ -329,16 +329,16 @@ namespace KlayGE
 			res->read(&native_shader_block[0], len * sizeof(native_shader_block[0]));
 		}
 
-		return this->AttachNativeShader(type, effect, shader_desc_ids, native_shader_block);
+		return this->AttachNativeShader(stage, effect, shader_desc_ids, native_shader_block);
 	}
 
-	void ShaderObject::StreamOut(std::ostream& os, ShaderType type)
+	void ShaderObject::StreamOut(std::ostream& os, ShaderStage stage)
 	{
-		so_template_->shader_stages_[type]->StreamOut(os);
+		this->Stage(stage)->StreamOut(os);
 	}
 
 #if KLAYGE_IS_DEV_PLATFORM
-	std::vector<uint8_t> ShaderObject::CompileToDXBC(ShaderType type, RenderEffect const & effect,
+	std::vector<uint8_t> ShaderObject::CompileToDXBC(ShaderStage stage, RenderEffect const & effect,
 			RenderTechnique const & tech, RenderPass const & pass,
 			std::vector<std::pair<char const *, char const *>> const & api_special_macros,
 			char const * func_name, char const * shader_profile, uint32_t flags)
@@ -417,34 +417,34 @@ namespace KlayGE
 		}
 		{
 			D3D_SHADER_MACRO macro_shader_type = { "", "1" };
-			switch (type)
+			switch (stage)
 			{
-			case ST_VertexShader:
+			case ShaderStage::VertexShader:
 				macro_shader_type.Name = "KLAYGE_VERTEX_SHADER";
 				break;
 
-			case ST_PixelShader:
+			case ShaderStage::PixelShader:
 				macro_shader_type.Name = "KLAYGE_PIXEL_SHADER";
 				break;
 
-			case ST_GeometryShader:
+			case ShaderStage::GeometryShader:
 				macro_shader_type.Name = "KLAYGE_GEOMETRY_SHADER";
 				break;
 
-			case ST_ComputeShader:
+			case ShaderStage::ComputeShader:
 				macro_shader_type.Name = "KLAYGE_COMPUTE_SHADER";
 				break;
 
-			case ST_HullShader:
+			case ShaderStage::HullShader:
 				macro_shader_type.Name = "KLAYGE_HULL_SHADER";
 				break;
 
-			case ST_DomainShader:
+			case ShaderStage::DomainShader:
 				macro_shader_type.Name = "KLAYGE_DOMAIN_SHADER";
 				break;
 
 			default:
-				KFL_UNREACHABLE("Invalid shader type");
+				KFL_UNREACHABLE("Invalid shader stage");
 			}
 			macros.push_back(macro_shader_type);
 		}
